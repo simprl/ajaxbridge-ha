@@ -1,0 +1,6 @@
+{
+  "name": "Ajaxbridge",
+  "render_readme": true,
+  "domains": ["ajaxbridge"],
+  "homeassistant": "2025.1.0"
+}

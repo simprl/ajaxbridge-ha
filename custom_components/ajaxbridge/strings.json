@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ajaxbridge",
+        "description": "Connect Home Assistant to an ajaxbridge server.",
+        "data": {
+          "bridge_url": "Bridge URL",
+          "installation_id": "Installation ID",
+          "api_token": "API token"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This ajaxbridge installation is already configured."
+    }
+  }
+}
+

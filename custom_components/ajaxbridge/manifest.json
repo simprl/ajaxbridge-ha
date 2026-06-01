@@ -1,0 +1,11 @@
+{
+  "domain": "ajaxbridge",
+  "name": "Ajaxbridge",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://ajaxbridge.ilazyhome.com",
+  "iot_class": "cloud_push",
+  "requirements": [],
+  "version": "0.1.0"
+}
+
