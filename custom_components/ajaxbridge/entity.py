@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
@@ -36,7 +41,10 @@ class AjaxbridgeEntity(CoordinatorEntity[AjaxbridgeCoordinator]):
     @property
     def entity_data(self) -> AjaxbridgeEntityDescription:
         """Return the current entity data."""
-        return self.coordinator.data.entities[self.entity_description_data.key]
+        return self.coordinator.data.entities.get(
+            self.entity_description_data.key,
+            self.entity_description_data,
+        )
 
     @property
     def available(self) -> bool:
@@ -48,3 +56,27 @@ class AjaxbridgeEntity(CoordinatorEntity[AjaxbridgeCoordinator]):
         """Return extra state attributes."""
         return dict(self.entity_data.attributes)
 
+
+def setup_dynamic_entities(
+    entry: ConfigEntry,
+    coordinator: AjaxbridgeCoordinator,
+    async_add_entities: AddEntitiesCallback,
+    platform: str,
+    factory: Callable[[AjaxbridgeCoordinator, AjaxbridgeEntityDescription], Entity],
+) -> None:
+    """Add entities for a platform and subscribe for new state-model entities."""
+    added_keys: set[str] = set()
+
+    def add_new_entities() -> None:
+        entities = []
+        for entity in coordinator.data.entities.values():
+            if entity.platform != platform or entity.key in added_keys:
+                continue
+            added_keys.add(entity.key)
+            entities.append(factory(coordinator, entity))
+
+        if entities:
+            async_add_entities(entities)
+
+    add_new_entities()
+    entry.async_on_unload(coordinator.async_add_listener(add_new_entities))

@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import AjaxbridgeCoordinator
-from .entity import AjaxbridgeEntity
+from .entity import AjaxbridgeEntity, setup_dynamic_entities
 
 
 async def async_setup_entry(
@@ -19,10 +19,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up binary sensors from the state model."""
     coordinator: AjaxbridgeCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    async_add_entities(
-        AjaxbridgeBinarySensor(coordinator, entity)
-        for entity in coordinator.data.entities.values()
-        if entity.platform == "binary_sensor"
+    setup_dynamic_entities(
+        entry,
+        coordinator,
+        async_add_entities,
+        "binary_sensor",
+        AjaxbridgeBinarySensor,
     )
 
 

@@ -5,11 +5,12 @@ from __future__ import annotations
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import AjaxbridgeCoordinator
-from .entity import AjaxbridgeEntity
+from .entity import AjaxbridgeEntity, setup_dynamic_entities
 
 
 async def async_setup_entry(
@@ -19,13 +20,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up sensors from the state model."""
     coordinator: AjaxbridgeCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    entities = [
-        AjaxbridgeSensor(coordinator, entity)
-        for entity in coordinator.data.entities.values()
-        if entity.platform == "sensor"
-    ]
-    entities.append(AjaxbridgeDiagnosticsSensor(coordinator))
-    async_add_entities(entities)
+    setup_dynamic_entities(entry, coordinator, async_add_entities, "sensor", AjaxbridgeSensor)
+    async_add_entities([AjaxbridgeDiagnosticsSensor(coordinator)])
 
 
 class AjaxbridgeSensor(AjaxbridgeEntity, SensorEntity):
@@ -59,6 +55,7 @@ class AjaxbridgeDiagnosticsSensor(SensorEntity):
 
     _attr_has_entity_name = False
     _attr_name = "Ajaxbridge Diagnostics"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, coordinator: AjaxbridgeCoordinator) -> None:
         self.coordinator = coordinator
