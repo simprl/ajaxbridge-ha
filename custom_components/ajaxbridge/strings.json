@@ -14,5 +14,18 @@
     "abort": {
       "already_configured": "This ajaxbridge installation is already configured."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ajaxbridge",
+        "description": "Update the ajaxbridge connection settings. The integration reloads after saving.",
+        "data": {
+          "bridge_url": "Bridge URL",
+          "installation_id": "Installation ID",
+          "api_token": "API token"
+        }
+      }
+    }
   }
 }
