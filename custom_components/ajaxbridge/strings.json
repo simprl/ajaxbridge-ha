@@ -19,13 +19,53 @@
     "step": {
       "init": {
         "title": "Ajaxbridge",
+        "description": "Choose what to manage.",
+        "data": {
+          "action": "Action"
+        }
+      },
+      "connection": {
+        "title": "Ajaxbridge connection",
         "description": "Update the ajaxbridge connection settings. The integration reloads after saving.",
         "data": {
           "bridge_url": "Bridge URL",
           "installation_id": "Installation ID",
           "api_token": "API token"
         }
+      },
+      "add_hub": {
+        "title": "Add hub",
+        "description": "Create a claim for this Home Assistant installation.",
+        "data": {
+          "hub_id": "Hub ID",
+          "hub_name": "Hub name",
+          "hub_model": "Hub model"
+        }
+      },
+      "verify_hub": {
+        "title": "Verify hub",
+        "description": "Add {code} to the Ajax user name on hub {hub_id}, perform a real Ajax action on that hub, then submit this step.",
+        "data": {}
+      },
+      "complete_claim": {
+        "title": "Add to installation",
+        "description": "Hub {hub_id} is verified. Submit this step to add it to this Home Assistant installation.",
+        "data": {}
+      },
+      "memberships": {
+        "title": "Memberships",
+        "description": "Enable or disable a hub membership for this Home Assistant installation.",
+        "data": {
+          "membership_id": "Membership",
+          "membership_action": "Action"
+        }
       }
+    },
+    "error": {
+      "required": "API token is required.",
+      "request_failed": "Ajaxbridge request failed.",
+      "not_verified": "Hub is not verified yet.",
+      "no_memberships": "No memberships are available."
     }
   }
 }

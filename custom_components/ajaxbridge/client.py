@@ -32,10 +32,70 @@ class AjaxbridgeClient:
             response.raise_for_status()
             return await response.json()
 
+    async def create_claim(
+        self,
+        *,
+        hub_id: str,
+        hub_name: str | None = None,
+        hub_model: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a self-service hub claim."""
+        return await self._post_json(
+            "/api/v1/me/claims",
+            {
+                "hub_id": hub_id,
+                "hub_name": hub_name,
+                "hub_model": hub_model,
+            },
+        )
+
+    async def list_claims(self) -> dict[str, Any]:
+        """List self-service claims for this installation."""
+        return await self._get_json("/api/v1/me/claims")
+
+    async def verify_claim(self, claim_id: str) -> dict[str, Any]:
+        """Ask the bridge to verify a claim against stored Ajax events."""
+        return await self._post_json(f"/api/v1/me/claims/{claim_id}/verify", {})
+
+    async def complete_claim(self, claim_id: str) -> dict[str, Any]:
+        """Complete a verified claim and create membership."""
+        return await self._post_json(f"/api/v1/me/claims/{claim_id}/complete", {})
+
+    async def list_memberships(self) -> dict[str, Any]:
+        """List memberships for this installation."""
+        return await self._get_json("/api/v1/me/memberships")
+
+    async def enable_membership(self, membership_id: str) -> dict[str, Any]:
+        """Enable a membership."""
+        return await self._post_json(f"/api/v1/me/memberships/{membership_id}/enable", {})
+
+    async def disable_membership(self, membership_id: str) -> dict[str, Any]:
+        """Disable a membership."""
+        return await self._post_json(f"/api/v1/me/memberships/{membership_id}/disable", {})
+
     @property
     def installation_id(self) -> str:
         """Return installation id."""
         return self._installation_id
+
+    async def _get_json(self, path: str) -> dict[str, Any]:
+        url = f"{self._bridge_url}{path}"
+        async with self._session.get(
+            url,
+            headers={"Authorization": f"Bearer {self._api_token}"},
+        ) as response:
+            response.raise_for_status()
+            return await response.json()
+
+    async def _post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        url = f"{self._bridge_url}{path}"
+        async with self._session.post(
+            url,
+            headers={"Authorization": f"Bearer {self._api_token}"},
+            json=payload,
+        ) as response:
+            response.raise_for_status()
+            return await response.json()
 
     async def connect_ws(self) -> aiohttp.ClientWebSocketResponse:
         """Open an authenticated WebSocket connection."""
