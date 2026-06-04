@@ -67,8 +67,7 @@
         "title": "Memberships",
         "description": "Enable or disable a hub membership for this Home Assistant installation.",
         "data": {
-          "membership_id": "Membership",
-          "membership_action": "Action"
+          "membership_change": "Change"
         }
       }
     },

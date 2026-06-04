@@ -67,8 +67,7 @@
         "title": "Зв'язки хабів",
         "description": "Увімкнути або вимкнути зв'язок хаба з цією інсталяцією Home Assistant.",
         "data": {
-          "membership_id": "Зв'язок",
-          "membership_action": "Дія"
+          "membership_change": "Зміна"
         }
       }
     },

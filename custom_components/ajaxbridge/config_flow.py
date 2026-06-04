@@ -249,12 +249,13 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
                 errors={"base": "request_failed"},
             )
         memberships = response.get("memberships") or []
-        choices = {
-            item["membership_id"]: (
-                f"{item.get('hub_name') or item['hub_id']} / "
-                f"{'enabled' if item.get('enabled') else 'disabled'}"
-            )
+        membership_by_change = {
+            _membership_change_key(item): item
             for item in memberships
+        }
+        choices = {
+            change_key: _membership_change_label(item)
+            for change_key, item in membership_by_change.items()
         }
         if not choices:
             return self.async_show_form(
@@ -264,11 +265,13 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             )
 
         if user_input is not None:
+            change_key = user_input["membership_change"]
+            membership = membership_by_change[change_key]
             try:
-                if user_input["membership_action"] == "enable":
-                    await self._client().enable_membership(user_input["membership_id"])
+                if membership.get("enabled"):
+                    await self._client().disable_membership(membership["membership_id"])
                 else:
-                    await self._client().disable_membership(user_input["membership_id"])
+                    await self._client().enable_membership(membership["membership_id"])
                 await self.hass.config_entries.async_reload(self.config_entry.entry_id)
             except AjaxbridgeApiError as err:
                 errors["base"] = _flow_error_from_api(err)
@@ -281,13 +284,7 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             step_id="memberships",
             data_schema=vol.Schema(
                 {
-                    vol.Required("membership_id"): vol.In(choices),
-                    vol.Required("membership_action", default="enable"): vol.In(
-                        {
-                            "enable": "Enable membership",
-                            "disable": "Disable membership",
-                        }
-                    ),
+                    vol.Required("membership_change"): vol.In(choices),
                 }
             ),
             errors=errors,
@@ -313,3 +310,15 @@ def _flow_error_from_api(err: AjaxbridgeApiError) -> str:
     if err.status == 409:
         return "conflict"
     return "request_failed"
+
+
+def _membership_change_key(membership: dict[str, Any]) -> str:
+    action = "disable" if membership.get("enabled") else "enable"
+    return f"{action}:{membership['membership_id']}"
+
+
+def _membership_change_label(membership: dict[str, Any]) -> str:
+    action = "Disable" if membership.get("enabled") else "Enable"
+    state = "enabled" if membership.get("enabled") else "disabled"
+    name = membership.get("hub_name") or membership["hub_id"]
+    return f"{action} {name} / {state}"
