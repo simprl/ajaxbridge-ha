@@ -65,27 +65,9 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Show ajaxbridge options menu."""
-        if user_input is not None:
-            action = user_input["action"]
-            if action == ACTION_ADD_HUB:
-                return await self.async_step_add_hub()
-            if action == ACTION_MEMBERSHIPS:
-                return await self.async_step_memberships()
-            return await self.async_step_connection()
-
-        return self.async_show_form(
+        return self.async_show_menu(
             step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("action", default=ACTION_ADD_HUB): vol.In(
-                        {
-                            ACTION_ADD_HUB: "Add hub",
-                            ACTION_MEMBERSHIPS: "Enable/disable membership",
-                            ACTION_CONNECTION: "Connection settings",
-                        }
-                    ),
-                }
-            ),
+            menu_options=[ACTION_ADD_HUB, ACTION_MEMBERSHIPS, ACTION_CONNECTION],
         )
 
     async def async_step_connection(

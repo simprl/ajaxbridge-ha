@@ -20,8 +20,10 @@
       "init": {
         "title": "Ajaxbridge",
         "description": "Choose what to manage.",
-        "data": {
-          "action": "Action"
+        "menu_options": {
+          "add_hub": "Add hub",
+          "memberships": "Enable/disable membership",
+          "connection": "Connection settings"
         }
       },
       "connection": {
