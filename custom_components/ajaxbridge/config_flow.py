@@ -208,10 +208,7 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
                     await self._client().complete_claim(claim["claim_id"])
                     await self.hass.config_entries.async_reload(self.config_entry.entry_id)
                 except AjaxbridgeApiError as err:
-                    errors["base"] = _flow_error_from_api(
-                        err,
-                        conflict_error="max_hubs_exceeded",
-                    )
+                    errors["base"] = _flow_error_from_api(err)
                 except (aiohttp.ClientError, RuntimeError):
                     errors["base"] = "request_failed"
                 else:
@@ -274,12 +271,7 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
                     await self._client().disable_membership(user_input["membership_id"])
                 await self.hass.config_entries.async_reload(self.config_entry.entry_id)
             except AjaxbridgeApiError as err:
-                conflict_error = (
-                    "max_hubs_exceeded"
-                    if user_input["membership_action"] == "enable"
-                    else None
-                )
-                errors["base"] = _flow_error_from_api(err, conflict_error=conflict_error)
+                errors["base"] = _flow_error_from_api(err)
             except (aiohttp.ClientError, RuntimeError):
                 errors["base"] = "request_failed"
             else:
@@ -310,18 +302,14 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
         )
 
 
-def _flow_error_from_api(
-    err: AjaxbridgeApiError,
-    *,
-    conflict_error: str | None = None,
-) -> str:
+def _flow_error_from_api(err: AjaxbridgeApiError) -> str:
     """Map ajaxbridge API errors to Home Assistant translation keys."""
     if err.detail == "max_hubs_exceeded":
         return "max_hubs_exceeded"
-    if err.status == 409 and conflict_error:
-        return conflict_error
     if err.status in (401, 403):
         return "unauthorized"
     if err.status == 404:
         return "not_found"
+    if err.status == 409:
+        return "conflict"
     return "request_failed"
