@@ -166,7 +166,10 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
                 self._claim = response["claim"]
                 if self._claim["status"] == "verified":
                     return await self.async_step_complete_claim()
-                errors["base"] = "not_verified"
+                if self._claim["status"] == "expired":
+                    errors["base"] = "expired"
+                else:
+                    errors["base"] = "not_verified"
 
         return self.async_show_form(
             step_id="verify_hub",

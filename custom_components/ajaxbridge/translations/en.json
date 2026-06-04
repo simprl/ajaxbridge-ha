@@ -76,6 +76,7 @@
       "required": "API token is required.",
       "request_failed": "Ajaxbridge request failed.",
       "not_verified": "Hub is not verified yet.",
+      "expired": "The verification code has expired. Start Add hub again to get a new code.",
       "no_memberships": "No memberships are available."
     }
   }
