@@ -11,6 +11,8 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 
 from .client import AjaxbridgeClient
 from .const import CONF_API_TOKEN, CONF_BRIDGE_URL, CONF_INSTALLATION_ID, DOMAIN, PLATFORMS
@@ -34,6 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     coordinator = AjaxbridgeCoordinator(hass, client)
     await coordinator.async_config_entry_first_refresh()
+    _async_cleanup_registry(hass, entry, coordinator)
 
     ws_task = hass.async_create_task(_ws_loop(coordinator))
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
@@ -123,3 +126,34 @@ def _async_register_services(hass: HomeAssistant) -> None:
         ),
     )
     hass.data[DOMAIN]["_services_registered"] = True
+
+
+def _async_cleanup_registry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    coordinator: AjaxbridgeCoordinator,
+) -> None:
+    """Remove HA registry entries no longer present in the bridge state model."""
+    if not coordinator.data:
+        return
+
+    current_entity_keys = set(coordinator.data.entities)
+    diagnostics_unique_id = f"{DOMAIN}:{coordinator.client.installation_id}:diagnostics"
+    entity_registry = er.async_get(hass)
+    for registry_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if registry_entry.unique_id == diagnostics_unique_id:
+            continue
+        if registry_entry.unique_id in current_entity_keys:
+            continue
+        entity_registry.async_remove(registry_entry.entity_id)
+
+    current_device_keys = set(coordinator.data.devices)
+    device_registry = dr.async_get(hass)
+    for device_entry in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        device_keys = {
+            identifier
+            for domain, identifier in device_entry.identifiers
+            if domain == DOMAIN
+        }
+        if device_keys and device_keys.isdisjoint(current_device_keys):
+            device_registry.async_remove_device(device_entry.id)
