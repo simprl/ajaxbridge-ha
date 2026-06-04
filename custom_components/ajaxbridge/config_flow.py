@@ -193,6 +193,15 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             step_id="verify_hub",
             data_schema=vol.Schema(
                 {
+                    vol.Optional("verification_code", default=claim["code"]): str,
+                    vol.Optional("hub_id", default=claim["hub_id"]): str,
+                    vol.Optional(
+                        "instruction",
+                        default=(
+                            "Add the verification code to the Ajax user name on this hub, "
+                            "then perform arm/disarm or another real Ajax action."
+                        ),
+                    ): str,
                     vol.Required("ajax_action_done", default=False): bool,
                 }
             ),
@@ -229,6 +238,7 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             step_id="complete_claim",
             data_schema=vol.Schema(
                 {
+                    vol.Optional("hub_id", default=claim["hub_id"]): str,
                     vol.Required("confirm_complete", default=True): bool,
                 }
             ),

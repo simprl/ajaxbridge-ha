@@ -46,6 +46,9 @@
         "title": "Verify hub",
         "description": "Add {code} to the Ajax user name on hub {hub_id}, perform a real Ajax action on that hub, then submit this step.",
         "data": {
+          "verification_code": "Verification code",
+          "hub_id": "Hub ID",
+          "instruction": "Instruction",
           "ajax_action_done": "I added the code and performed an Ajax action"
         }
       },
@@ -53,6 +56,7 @@
         "title": "Add to installation",
         "description": "Hub {hub_id} is verified. Submit this step to add it to this Home Assistant installation.",
         "data": {
+          "hub_id": "Hub ID",
           "confirm_complete": "Add this hub to this Home Assistant installation"
         }
       },
