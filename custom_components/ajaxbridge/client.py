@@ -7,6 +7,15 @@ from typing import Any
 import aiohttp
 
 
+class AjaxbridgeApiError(RuntimeError):
+    """Raised when ajaxbridge returns a structured HTTP error."""
+
+    def __init__(self, status: int, detail: str) -> None:
+        super().__init__(detail)
+        self.status = status
+        self.detail = detail
+
+
 class AjaxbridgeClient:
     """Small HTTP client for ajaxbridge."""
 
@@ -29,7 +38,7 @@ class AjaxbridgeClient:
             url,
             headers={"Authorization": f"Bearer {self._api_token}"},
         ) as response:
-            response.raise_for_status()
+            await _raise_for_api_error(response)
             return await response.json()
 
     async def create_claim(
@@ -84,7 +93,7 @@ class AjaxbridgeClient:
             url,
             headers={"Authorization": f"Bearer {self._api_token}"},
         ) as response:
-            response.raise_for_status()
+            await _raise_for_api_error(response)
             return await response.json()
 
     async def _post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -94,7 +103,7 @@ class AjaxbridgeClient:
             headers={"Authorization": f"Bearer {self._api_token}"},
             json=payload,
         ) as response:
-            response.raise_for_status()
+            await _raise_for_api_error(response)
             return await response.json()
 
     async def connect_ws(self) -> aiohttp.ClientWebSocketResponse:
@@ -113,3 +122,17 @@ class AjaxbridgeClient:
             await ws.close()
             raise RuntimeError(f"Ajaxbridge auth failed: {auth}")
         return ws
+
+
+async def _raise_for_api_error(response: aiohttp.ClientResponse) -> None:
+    """Raise an error that preserves FastAPI's JSON detail field."""
+    if response.status < 400:
+        return
+    detail = response.reason
+    try:
+        payload = await response.json()
+    except (aiohttp.ContentTypeError, ValueError):
+        payload = None
+    if isinstance(payload, dict) and payload.get("detail"):
+        detail = str(payload["detail"])
+    raise AjaxbridgeApiError(response.status, detail)

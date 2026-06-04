@@ -11,7 +11,7 @@ from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .client import AjaxbridgeClient
+from .client import AjaxbridgeApiError, AjaxbridgeClient
 from .const import CONF_API_TOKEN, CONF_BRIDGE_URL, CONF_INSTALLATION_ID, DOMAIN
 
 ACTION_ADD_HUB = "add_hub"
@@ -129,6 +129,8 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
                     hub_name=(user_input.get("hub_name") or "").strip() or None,
                     hub_model=(user_input.get("hub_model") or "").strip() or None,
                 )
+            except AjaxbridgeApiError as err:
+                errors["base"] = _flow_error_from_api(err)
             except (aiohttp.ClientError, RuntimeError):
                 errors["base"] = "request_failed"
             else:
@@ -160,6 +162,8 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             try:
                 response = await self._client().verify_claim(claim["claim_id"])
+            except AjaxbridgeApiError as err:
+                errors["base"] = _flow_error_from_api(err)
             except (aiohttp.ClientError, RuntimeError):
                 errors["base"] = "request_failed"
             else:
@@ -203,6 +207,8 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
                 try:
                     await self._client().complete_claim(claim["claim_id"])
                     await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+                except AjaxbridgeApiError as err:
+                    errors["base"] = _flow_error_from_api(err)
                 except (aiohttp.ClientError, RuntimeError):
                     errors["base"] = "request_failed"
                 else:
@@ -230,6 +236,12 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
         try:
             response = await self._client().list_memberships()
+        except AjaxbridgeApiError as err:
+            return self.async_show_form(
+                step_id="memberships",
+                data_schema=vol.Schema({}),
+                errors={"base": _flow_error_from_api(err)},
+            )
         except (aiohttp.ClientError, RuntimeError):
             return self.async_show_form(
                 step_id="memberships",
@@ -258,6 +270,8 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
                 else:
                     await self._client().disable_membership(user_input["membership_id"])
                 await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            except AjaxbridgeApiError as err:
+                errors["base"] = _flow_error_from_api(err)
             except (aiohttp.ClientError, RuntimeError):
                 errors["base"] = "request_failed"
             else:
@@ -286,3 +300,14 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             installation_id=self.config_entry.data[CONF_INSTALLATION_ID],
             api_token=self.config_entry.data[CONF_API_TOKEN],
         )
+
+
+def _flow_error_from_api(err: AjaxbridgeApiError) -> str:
+    """Map ajaxbridge API errors to Home Assistant translation keys."""
+    if err.detail == "max_hubs_exceeded":
+        return "max_hubs_exceeded"
+    if err.status in (401, 403):
+        return "unauthorized"
+    if err.status == 404:
+        return "not_found"
+    return "request_failed"

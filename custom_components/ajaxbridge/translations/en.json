@@ -77,7 +77,10 @@
       "request_failed": "Ajaxbridge request failed.",
       "not_verified": "Hub is not verified yet.",
       "expired": "The verification code has expired. Start Add hub again to get a new code.",
-      "no_memberships": "No memberships are available."
+      "no_memberships": "No memberships are available.",
+      "max_hubs_exceeded": "This installation has reached its enabled hub limit. Disable another membership or ask an operator to increase Max hubs.",
+      "unauthorized": "Ajaxbridge rejected this installation token or scope.",
+      "not_found": "Ajaxbridge could not find this claim or membership for the current installation."
     }
   }
 }
