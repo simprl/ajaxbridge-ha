@@ -47,9 +47,10 @@
         "description": "Add {code} to the Ajax user name on hub {hub_id}, perform a real Ajax action on that hub, then submit this step.",
         "data": {
           "verification_code": "Verification code",
-          "hub_id": "Hub ID",
-          "instruction": "Instruction",
-          "ajax_action_done": "I added the code and performed an Ajax action"
+          "hub_id": "Hub ID"
+        },
+        "data_description": {
+          "verification_code": "Add this code to the Ajax user name on the hub, then perform arm/disarm or another real Ajax action before submitting."
         }
       },
       "complete_claim": {
