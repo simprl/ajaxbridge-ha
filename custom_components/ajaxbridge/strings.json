@@ -45,12 +45,16 @@
       "verify_hub": {
         "title": "Verify hub",
         "description": "Add {code} to the Ajax user name on hub {hub_id}, perform a real Ajax action on that hub, then submit this step.",
-        "data": {}
+        "data": {
+          "ajax_action_done": "I added the code and performed an Ajax action"
+        }
       },
       "complete_claim": {
         "title": "Add to installation",
         "description": "Hub {hub_id} is verified. Submit this step to add it to this Home Assistant installation.",
-        "data": {}
+        "data": {
+          "confirm_complete": "Add this hub to this Home Assistant installation"
+        }
       },
       "memberships": {
         "title": "Memberships",

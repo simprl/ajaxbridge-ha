@@ -176,19 +176,26 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             return await self.async_step_add_hub()
 
         if user_input is not None:
-            try:
-                response = await self._client().verify_claim(claim["claim_id"])
-            except (aiohttp.ClientError, RuntimeError):
-                errors["base"] = "request_failed"
+            if not user_input.get("ajax_action_done"):
+                errors["base"] = "required"
             else:
-                self._claim = response["claim"]
-                if self._claim["status"] == "verified":
-                    return await self.async_step_complete_claim()
-                errors["base"] = "not_verified"
+                try:
+                    response = await self._client().verify_claim(claim["claim_id"])
+                except (aiohttp.ClientError, RuntimeError):
+                    errors["base"] = "request_failed"
+                else:
+                    self._claim = response["claim"]
+                    if self._claim["status"] == "verified":
+                        return await self.async_step_complete_claim()
+                    errors["base"] = "not_verified"
 
         return self.async_show_form(
             step_id="verify_hub",
-            data_schema=vol.Schema({}),
+            data_schema=vol.Schema(
+                {
+                    vol.Required("ajax_action_done", default=False): bool,
+                }
+            ),
             description_placeholders={
                 "hub_id": claim["hub_id"],
                 "code": claim["code"],
@@ -207,17 +214,24 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             return await self.async_step_add_hub()
 
         if user_input is not None:
-            try:
-                await self._client().complete_claim(claim["claim_id"])
-                await self.hass.config_entries.async_reload(self.config_entry.entry_id)
-            except (aiohttp.ClientError, RuntimeError):
-                errors["base"] = "request_failed"
+            if not user_input.get("confirm_complete"):
+                errors["base"] = "required"
             else:
-                return self.async_create_entry(title="", data={})
+                try:
+                    await self._client().complete_claim(claim["claim_id"])
+                    await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+                except (aiohttp.ClientError, RuntimeError):
+                    errors["base"] = "request_failed"
+                else:
+                    return self.async_create_entry(title="", data={})
 
         return self.async_show_form(
             step_id="complete_claim",
-            data_schema=vol.Schema({}),
+            data_schema=vol.Schema(
+                {
+                    vol.Required("confirm_complete", default=True): bool,
+                }
+            ),
             description_placeholders={
                 "hub_id": claim["hub_id"],
             },
