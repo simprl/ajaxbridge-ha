@@ -8,6 +8,7 @@ from typing import Any
 import aiohttp
 
 REQUEST_TIMEOUT_SECONDS = 15
+WS_HEARTBEAT_SECONDS = 30
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)
 
 
@@ -123,7 +124,8 @@ class AjaxbridgeClient:
         ws = await self._session.ws_connect(
             f"{ws_url}/api/v1/ws",
             timeout=REQUEST_TIMEOUT_SECONDS,
-            receive_timeout=REQUEST_TIMEOUT_SECONDS,
+            receive_timeout=None,
+            heartbeat=WS_HEARTBEAT_SECONDS,
         )
         await ws.send_json(
             {
