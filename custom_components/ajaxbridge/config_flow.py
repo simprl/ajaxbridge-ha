@@ -375,7 +375,7 @@ async def _validate_connection_settings(
     installation = response.get("installation") or {}
     actual_installation_id = str(installation.get("installation_id") or "").strip().lower()
     if actual_installation_id != installation_id:
-        return "installation_mismatch"
+        return "unauthorized"
     return None
 
 

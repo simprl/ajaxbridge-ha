@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import aiohttp
+
+REQUEST_TIMEOUT_SECONDS = 15
+REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)
 
 
 class AjaxbridgeApiError(RuntimeError):
@@ -37,6 +41,7 @@ class AjaxbridgeClient:
         async with self._session.get(
             url,
             headers={"Authorization": f"Bearer {self._api_token}"},
+            timeout=REQUEST_TIMEOUT,
         ) as response:
             await _raise_for_api_error(response)
             return await response.json()
@@ -96,6 +101,7 @@ class AjaxbridgeClient:
         async with self._session.get(
             url,
             headers={"Authorization": f"Bearer {self._api_token}"},
+            timeout=REQUEST_TIMEOUT,
         ) as response:
             await _raise_for_api_error(response)
             return await response.json()
@@ -106,6 +112,7 @@ class AjaxbridgeClient:
             url,
             headers={"Authorization": f"Bearer {self._api_token}"},
             json=payload,
+            timeout=REQUEST_TIMEOUT,
         ) as response:
             await _raise_for_api_error(response)
             return await response.json()
@@ -113,7 +120,11 @@ class AjaxbridgeClient:
     async def connect_ws(self) -> aiohttp.ClientWebSocketResponse:
         """Open an authenticated WebSocket connection."""
         ws_url = self._bridge_url.replace("https://", "wss://").replace("http://", "ws://")
-        ws = await self._session.ws_connect(f"{ws_url}/api/v1/ws")
+        ws = await self._session.ws_connect(
+            f"{ws_url}/api/v1/ws",
+            timeout=REQUEST_TIMEOUT_SECONDS,
+            receive_timeout=REQUEST_TIMEOUT_SECONDS,
+        )
         await ws.send_json(
             {
                 "type": "auth",
@@ -121,7 +132,12 @@ class AjaxbridgeClient:
                 "token": self._api_token,
             }
         )
-        auth = await ws.receive_json()
+        try:
+            async with asyncio.timeout(REQUEST_TIMEOUT_SECONDS):
+                auth = await ws.receive_json()
+        except TimeoutError as err:
+            await ws.close()
+            raise RuntimeError("Ajaxbridge auth timed out") from err
         if auth.get("type") != "auth_ok":
             await ws.close()
             raise RuntimeError(f"Ajaxbridge auth failed: {auth}")
