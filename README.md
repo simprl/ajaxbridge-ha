@@ -30,15 +30,15 @@ The operator should provide:
 
 Do not use an Ajaxbridge admin token in Home Assistant.
 
-The target Ajax hub must also include the iLazyHome Ajax user:
+Before hub verification, the target Ajax hub must include the iLazyHome Ajax
+user:
 
 ```text
 ajaxpro@ilazyhome.com
 ```
 
-Add or invite this user in the Ajax app before starting hub verification. The
-bridge receives Ajax events through this Ajax user, so a hub that does not share
-access with this user may not produce events for Ajaxbridge.
+The bridge receives Ajax events through this Ajax user, so a hub that does not
+share access with this user may not produce events for Ajaxbridge.
 
 ### Install Through HACS
 
@@ -79,12 +79,14 @@ installation and given you a valid installation token.
 1. Open `Settings -> Devices & services -> Ajaxbridge -> Configure`.
 2. Choose `Add hub`.
 3. Enter the Ajax hub ID.
-4. Home Assistant shows a verification code like `AJB-123456`.
-5. Temporarily add that code to your Ajax user name for the target hub.
-6. Perform a real Ajax action on that hub, for example arm or disarm a group.
-7. Return to Home Assistant and choose `Verify hub`.
-8. After verification succeeds, choose `Add to installation`.
-9. Check that the hub appears under Ajaxbridge devices and that its entities
+4. In the Ajax app, add or invite the iLazyHome Ajax user
+   `ajaxpro@ilazyhome.com` to the target hub if it is not already there.
+5. Home Assistant shows a verification code like `AJB-123456`.
+6. Temporarily add that code to your Ajax user name for the target hub.
+7. Perform a real Ajax action on that hub, for example arm or disarm a group.
+8. Return to Home Assistant and choose `Verify hub`.
+9. After verification succeeds, choose `Add to installation`.
+10. Check that the hub appears under Ajaxbridge devices and that its entities
    update after a real Ajax arm/disarm event.
 
 The verification code proves that the HA operator can influence the target Ajax
@@ -186,15 +188,14 @@ If entities stop updating:
 
 Не використовуйте адмінський токен Ajaxbridge у Home Assistant.
 
-Цільовий Ajax-хаб також має містити Ajax-користувача iLazyHome:
+Перед перевіркою хаба цільовий Ajax-хаб має містити Ajax-користувача iLazyHome:
 
 ```text
 ajaxpro@ilazyhome.com
 ```
 
-Додайте або запросіть цього користувача в застосунку Ajax перед перевіркою
-хаба. Bridge отримує Ajax-події через цього Ajax-користувача, тому хаб без
-доступу для цього користувача може не надсилати події в Ajaxbridge.
+Bridge отримує Ajax-події через цього Ajax-користувача, тому хаб без доступу
+для цього користувача може не надсилати події в Ajaxbridge.
 
 ### Встановлення через HACS
 
@@ -235,14 +236,16 @@ Settings -> Devices & services -> Ajaxbridge -> Configure
 1. Відкрийте `Settings -> Devices & services -> Ajaxbridge -> Configure`.
 2. Виберіть `Add hub`.
 3. Введіть ID Ajax-хаба.
-4. Home Assistant покаже код перевірки на кшталт `AJB-123456`.
-5. Тимчасово додайте цей код до імені вашого Ajax-користувача на цільовому
+4. У застосунку Ajax додайте або запросіть Ajax-користувача iLazyHome
+   `ajaxpro@ilazyhome.com` на цільовий хаб, якщо його там ще немає.
+5. Home Assistant покаже код перевірки на кшталт `AJB-123456`.
+6. Тимчасово додайте цей код до імені вашого Ajax-користувача на цільовому
    хабі.
-6. Виконайте реальну дію в Ajax на цьому хабі, наприклад поставте групу під
+7. Виконайте реальну дію в Ajax на цьому хабі, наприклад поставте групу під
    охорону або зніміть її з охорони.
-7. Поверніться в Home Assistant і виберіть `Verify hub`.
-8. Після успішної перевірки виберіть `Add to installation`.
-9. Переконайтеся, що хаб з'явився серед пристроїв Ajaxbridge і що його сутності
+8. Поверніться в Home Assistant і виберіть `Verify hub`.
+9. Після успішної перевірки виберіть `Add to installation`.
+10. Переконайтеся, що хаб з'явився серед пристроїв Ajaxbridge і що його сутності
    оновлюються після реальної Ajax-дії.
 
 Код перевірки підтверджує, що оператор HA може впливати на цільовий Ajax-хаб
