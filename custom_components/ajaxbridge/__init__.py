@@ -8,8 +8,9 @@ from typing import Any
 
 import aiohttp
 import voluptuous as vol
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CoreState, Event, HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -37,14 +38,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = AjaxbridgeCoordinator(hass, client)
     coordinator.async_set_updated_data(AjaxbridgeData(installation_id=client.installation_id))
 
-    ws_task = hass.async_create_task(_ws_loop(coordinator))
-    refresh_task = hass.async_create_task(_async_initial_refresh(hass, entry, coordinator))
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "coordinator": coordinator,
-        "ws_task": ws_task,
-        "refresh_task": refresh_task,
+        "ws_task": None,
+        "refresh_task": None,
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _async_start_background_tasks_after_startup(hass, entry, coordinator)
     return True
 
 
@@ -59,6 +59,33 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
+
+
+def _async_start_background_tasks_after_startup(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    coordinator: AjaxbridgeCoordinator,
+) -> None:
+    """Start long-running bridge tasks after HA startup wraps up."""
+
+    def start_tasks(_: Event | None = None) -> None:
+        data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+        if data is None:
+            return
+        if data.get("ws_task") is None:
+            data["ws_task"] = hass.async_create_task(_ws_loop(coordinator))
+        if data.get("refresh_task") is None:
+            data["refresh_task"] = hass.async_create_task(
+                _async_initial_refresh(hass, entry, coordinator)
+            )
+
+    if hass.state == CoreState.running:
+        start_tasks()
+        return
+
+    entry.async_on_unload(
+        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, start_tasks)
+    )
 
 
 async def _async_initial_refresh(
