@@ -245,7 +245,6 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             step_id="complete_claim",
             data_schema=vol.Schema(
                 {
-                    vol.Optional("hub_id", default=claim["hub_id"]): str,
                     vol.Required("confirm_complete", default=True): bool,
                 }
             ),

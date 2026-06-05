@@ -64,7 +64,6 @@
         "title": "Додати до інсталяції",
         "description": "Хаб {hub_id} перевірено. Місткість: {capacity}. Надішліть цю форму, щоб додати його до цієї інсталяції Home Assistant.",
         "data": {
-          "hub_id": "ID хаба",
           "confirm_complete": "Додати цей хаб до цієї інсталяції Home Assistant"
         }
       },

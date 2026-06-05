@@ -64,7 +64,6 @@
         "title": "Add to installation",
         "description": "Hub {hub_id} is verified. Capacity: {capacity}. Submit this step to add it to this Home Assistant installation.",
         "data": {
-          "hub_id": "Hub ID",
           "confirm_complete": "Add this hub to this Home Assistant installation"
         }
       },
