@@ -40,6 +40,15 @@ ajaxpro@ilazyhome.com
 The bridge receives Ajax events through this Ajax user, so a hub that does not
 share access with this user may not produce events for Ajaxbridge.
 
+By inviting this user, you agree that the iLazyHome Ajax account can receive
+events and notifications from this hub so Ajaxbridge can forward the hub state
+to your Home Assistant installation. Do not grant this user admin access or
+full system control. After the invite is active, open this user's settings in
+the Ajax app and leave only the minimum `View notifications` / notification
+feed access required for event delivery. Disable other available rights such as
+arming control, Night mode, panic button, cameras, automation devices, devices
+and rooms, and system settings/configuration access.
+
 To see Ajax hub state in Home Assistant, three things must be true:
 
 1. Home Assistant is connected to Ajaxbridge with the correct installation ID
@@ -103,16 +112,21 @@ installation and given you a valid installation token.
 11. Click `Continue` to send the invite.
 12. Wait until this user appears in `Active users`, or ask the iLazyHome
     operator to accept/confirm the invite if it remains in `Pending invites`.
-13. In the Ajax app, open the main menu, then `Account`, then `Edit Account`.
-14. Add the verification code to your own Ajax user name. For example, change
+13. Open the `ajaxpro@ilazyhome.com` user settings in the Ajax app.
+14. Remove unnecessary permissions. Keep `View notifications` / notification
+    feed access enabled, but do not grant admin rights,
+    settings/configuration access, arming control, camera access, automation
+    control, or other permissions that are not required for receiving events.
+15. In the Ajax app, open the main menu, then `Account`, then `Edit Account`.
+16. Add the verification code to your own Ajax user name. For example, change
     `John Smith` to `John Smith AJB-123456`.
-15. Save the account name.
-16. Perform a real Ajax action on the target hub, for example arm or disarm a
+17. Save the account name.
+18. Perform a real Ajax action on the target hub, for example arm or disarm a
     group.
-17. Return to Home Assistant and choose `Verify hub`.
-18. After verification succeeds, choose `Add to installation`.
-19. Remove the `AJB-123456` code from your Ajax user name.
-20. Check that the hub appears under Ajaxbridge devices and that its entities
+19. Return to Home Assistant and choose `Verify hub`.
+20. After verification succeeds, choose `Add to installation`.
+21. Remove the `AJB-123456` code from your Ajax user name.
+22. Check that the hub appears under Ajaxbridge devices and that its entities
    update after a real Ajax arm/disarm event.
 
 The verification code proves that the HA operator can influence the target Ajax
@@ -124,6 +138,9 @@ enter email -> Continue`.
 
 Official Ajax reference:
 `https://support.ajax.systems/en/faqs/how-to-invite-users/`.
+
+Official Ajax access-rights reference:
+`https://support.ajax.systems/en/faqs/access-settings/`.
 
 If you do not see `Users` or `Send invites` in the Ajax app, your Ajax account
 does not have enough rights to invite users. Ask the Ajax space administrator
@@ -234,6 +251,16 @@ ajaxpro@ilazyhome.com
 Bridge отримує Ajax-події через цього Ajax-користувача, тому хаб без доступу
 для цього користувача може не надсилати події в Ajaxbridge.
 
+Запрошуючи цього користувача, ви погоджуєтеся, що Ajax-акаунт iLazyHome може
+отримувати події та нотифікації з цього хаба, щоб Ajaxbridge міг передавати
+стан хаба у вашу інсталяцію Home Assistant. Не надавайте цьому користувачу
+admin-доступ або повний контроль системи. Після активації запрошення відкрийте
+налаштування цього користувача в застосунку Ajax і залиште тільки мінімальний
+доступ `View notifications` / notification feed, потрібний для доставки подій.
+Вимкніть інші доступні права: керування охороною, Night mode, panic button,
+камери, automation devices, devices and rooms, а також доступ до system
+settings/configuration.
+
 Щоб стан Ajax-хаба з'явився в Home Assistant, мають виконуватися три умови:
 
 1. Home Assistant підключений до Ajaxbridge з правильним installation ID і
@@ -298,17 +325,23 @@ Settings -> Devices & services -> Ajaxbridge -> Configure
 12. Дочекайтеся, поки цей користувач з'явиться в `Active users`, або попросіть
     оператора iLazyHome прийняти/підтвердити запрошення, якщо воно залишилося в
     `Pending invites`.
-13. У застосунку Ajax відкрийте головне меню, потім `Account`, потім
+13. Відкрийте налаштування користувача `ajaxpro@ilazyhome.com` у застосунку
+    Ajax.
+14. Приберіть зайві права. Залиште доступ `View notifications` / notification
+    feed увімкненим, але не надавайте admin rights,
+    settings/configuration access, arming control, camera access, automation
+    control або інші права, які не потрібні для отримання подій.
+15. У застосунку Ajax відкрийте головне меню, потім `Account`, потім
     `Edit Account`.
-14. Додайте код перевірки до імені вашого Ajax-користувача. Наприклад, змініть
+16. Додайте код перевірки до імені вашого Ajax-користувача. Наприклад, змініть
     `John Smith` на `John Smith AJB-123456`.
-15. Збережіть ім'я акаунта.
-16. Виконайте реальну дію в Ajax на цільовому хабі, наприклад поставте групу під
+17. Збережіть ім'я акаунта.
+18. Виконайте реальну дію в Ajax на цільовому хабі, наприклад поставте групу під
    охорону або зніміть її з охорони.
-17. Поверніться в Home Assistant і виберіть `Verify hub`.
-18. Після успішної перевірки виберіть `Add to installation`.
-19. Видаліть код `AJB-123456` з імені вашого Ajax-користувача.
-20. Переконайтеся, що хаб з'явився серед пристроїв Ajaxbridge і що його сутності
+19. Поверніться в Home Assistant і виберіть `Verify hub`.
+20. Після успішної перевірки виберіть `Add to installation`.
+21. Видаліть код `AJB-123456` з імені вашого Ajax-користувача.
+22. Переконайтеся, що хаб з'явився серед пристроїв Ajaxbridge і що його сутності
    оновлюються після реальної Ajax-дії.
 
 Код перевірки підтверджує, що оператор HA може впливати на цільовий Ajax-хаб
@@ -320,6 +353,9 @@ enter email -> Continue`.
 
 Офіційна інструкція Ajax:
 `https://support.ajax.systems/en/faqs/how-to-invite-users/`.
+
+Офіційна інструкція Ajax щодо обмеження доступу:
+`https://support.ajax.systems/en/faqs/access-settings/`.
 
 Якщо ви не бачите `Users` або `Send invites` у застосунку Ajax, ваш Ajax-акаунт
 не має достатніх прав для запрошення користувачів. Попросіть адміністратора
