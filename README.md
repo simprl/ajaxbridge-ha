@@ -226,6 +226,31 @@ If entities stop updating:
 5. Restart Home Assistant only after a custom integration update or if reload
    does not apply changed Python code.
 
+### Troubleshooting
+
+If a newly added hub shows only these two entities:
+
+```text
+sensor.ajax_<hub>_security_summary
+sensor.ajax_<hub>_delivery_lag
+```
+
+reload the Ajaxbridge integration from `Settings -> Devices & services`.
+Those two sensors are hub-level aggregate/diagnostic entities. Group-level
+alarm panels and group sensors appear after Home Assistant receives a state
+model that includes Ajax group metadata for that hub.
+
+If group-level entities still do not appear after reload:
+
+1. Confirm the hub was added to the installation, not only verified.
+2. Confirm `ajaxpro@ilazyhome.com` is active on the Ajax hub and can receive
+   notifications.
+3. Perform a real Ajax arm/disarm action on the target group.
+4. Check `sensor.ajaxbridge_diagnostics` and confirm `rest_refreshes` increases
+   after reload and `ws_connected` is `true`.
+5. Contact the iLazyHome operator if the hub was just added and still has no
+   group metadata on the bridge.
+
 ## Українською
 
 ### Отримання даних для підключення
@@ -440,3 +465,28 @@ sensor.ajaxbridge_diagnostics
 4. Перезавантажте інтеграцію Ajaxbridge.
 5. Перезапускайте Home Assistant тільки після оновлення custom integration або
    якщо reload не застосував змінений Python-код.
+
+### Вирішення проблем
+
+Якщо щойно доданий хаб показує тільки дві сутності:
+
+```text
+sensor.ajax_<hub>_security_summary
+sensor.ajax_<hub>_delivery_lag
+```
+
+перезавантажте інтеграцію Ajaxbridge у `Settings -> Devices & services`.
+Ці дві сутності є hub-level агрегатом і діагностикою. Group-level alarm panels
+та сенсори груп з'являються після того, як Home Assistant отримає state model
+з Ajax group metadata для цього хаба.
+
+Якщо group-level сутності не з'явилися після reload:
+
+1. Переконайтеся, що хаб додано до інсталяції, а не тільки перевірено.
+2. Переконайтеся, що `ajaxpro@ilazyhome.com` активний на Ajax-хабі і може
+   отримувати нотифікації.
+3. Виконайте реальну Ajax-дію arm/disarm на цільовій групі.
+4. Перевірте `sensor.ajaxbridge_diagnostics`: `rest_refreshes` має збільшитися
+   після reload, а `ws_connected` має бути `true`.
+5. Зв'яжіться з оператором iLazyHome, якщо хаб щойно додано і на bridge все ще
+   немає group metadata для нього.
