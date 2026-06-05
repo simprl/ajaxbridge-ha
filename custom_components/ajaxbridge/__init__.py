@@ -8,6 +8,7 @@ from typing import Any
 
 import aiohttp
 import voluptuous as vol
+from homeassistant.components import alarm_control_panel, binary_sensor, sensor
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CoreState, Event, HomeAssistant
@@ -107,6 +108,7 @@ async def _async_initial_refresh(
         return
 
     _async_cleanup_registry(hass, entry, coordinator)
+    _async_align_group_entity_ids(hass, entry, coordinator)
 
 
 async def _ws_loop(coordinator: AjaxbridgeCoordinator) -> None:
@@ -224,3 +226,61 @@ def _async_cleanup_registry(
         }
         if device_keys and device_keys.isdisjoint(current_device_keys):
             device_registry.async_remove_device(device_entry.id)
+
+
+def _async_align_group_entity_ids(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    coordinator: AjaxbridgeCoordinator,
+) -> None:
+    """Keep group helper sensors next to their group alarm panel object id."""
+    if not coordinator.data:
+        return
+
+    entity_registry = er.async_get(hass)
+    registry_entries = er.async_entries_for_config_entry(entity_registry, entry.entry_id)
+    by_unique_id = {registry_entry.unique_id: registry_entry for registry_entry in registry_entries}
+    suffix_platforms = {
+        "alarm_active": binary_sensor.DOMAIN,
+        "alarm_source": sensor.DOMAIN,
+        "security_state": sensor.DOMAIN,
+        "last_event": sensor.DOMAIN,
+    }
+
+    for registry_entry in registry_entries:
+        unique_id = registry_entry.unique_id
+        if not unique_id.startswith("ajax:group:") or not unique_id.endswith(":alarm"):
+            continue
+        if not registry_entry.entity_id.startswith(f"{alarm_control_panel.DOMAIN}."):
+            continue
+
+        object_id = registry_entry.entity_id.split(".", 1)[1]
+        group_key = unique_id[: -len(":alarm")]
+        for suffix, platform in suffix_platforms.items():
+            target_unique_id = f"{group_key}:{suffix}"
+            target_entry = by_unique_id.get(target_unique_id)
+            if target_entry is None:
+                continue
+            desired_entity_id = f"{platform}.{object_id}_{suffix}"
+            if target_entry.entity_id == desired_entity_id:
+                continue
+            existing_entry = entity_registry.async_get(desired_entity_id)
+            if existing_entry is not None and existing_entry.unique_id != target_unique_id:
+                _LOGGER.warning(
+                    "Cannot rename Ajaxbridge entity %s to %s: target exists",
+                    target_entry.entity_id,
+                    desired_entity_id,
+                )
+                continue
+            try:
+                entity_registry.async_update_entity(
+                    target_entry.entity_id,
+                    new_entity_id=desired_entity_id,
+                )
+            except ValueError as err:
+                _LOGGER.warning(
+                    "Cannot rename Ajaxbridge entity %s to %s: %s",
+                    target_entry.entity_id,
+                    desired_entity_id,
+                    err,
+                )
