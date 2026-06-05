@@ -67,7 +67,7 @@ To see Ajax hub state in Home Assistant, three things must be true:
 6. Restart Home Assistant.
 7. Add `Ajaxbridge` from `Settings -> Devices & services`.
 
-### Connect Home Assistant
+### Connect Home Assistant To Ajaxbridge
 
 The config flow asks for:
 
@@ -88,7 +88,7 @@ Settings -> Devices & services -> Ajaxbridge -> Configure
 When updating the token, the token field is intentionally shown empty. Enter a
 new token only when the operator has regenerated it for this installation.
 
-### Add a Hub From Home Assistant
+### Add an Ajax Hub To Home Assistant
 
 Use this flow when an Ajaxbridge operator has already created the HA
 installation and given you a valid installation token.
@@ -279,7 +279,7 @@ settings/configuration.
 6. Перезапустіть Home Assistant.
 7. Додайте `Ajaxbridge` у `Settings -> Devices & services`.
 
-### Підключення Home Assistant
+### Підключення Home Assistant до Ajaxbridge
 
 Форма налаштування запитує:
 
@@ -300,7 +300,7 @@ Settings -> Devices & services -> Ajaxbridge -> Configure
 Під час оновлення токена поле токена навмисно показується порожнім. Вводьте
 новий токен тільки тоді, коли оператор згенерував його для цієї інсталяції.
 
-### Додавання хаба з Home Assistant
+### Додавання Ajax-хаба до Home Assistant
 
 Використовуйте цей сценарій, коли оператор Ajaxbridge вже створив HA
 інсталяцію і надав чинний токен інсталяції.
