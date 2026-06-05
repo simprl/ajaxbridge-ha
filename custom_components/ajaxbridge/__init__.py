@@ -44,7 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "refresh_task": None,
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    _async_start_background_tasks_after_startup(hass, entry, coordinator)
+    await _async_start_background_tasks_after_startup(hass, entry, coordinator)
     return True
 
 
@@ -61,26 +61,30 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-def _async_start_background_tasks_after_startup(
+async def _async_start_background_tasks_after_startup(
     hass: HomeAssistant,
     entry: ConfigEntry,
     coordinator: AjaxbridgeCoordinator,
 ) -> None:
     """Start long-running bridge tasks after HA startup wraps up."""
 
-    def start_tasks(_: Event | None = None) -> None:
+    async def start_tasks(_: Event | None = None) -> None:
         data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
         if data is None:
             return
         if data.get("ws_task") is None:
-            data["ws_task"] = hass.async_create_task(_ws_loop(coordinator))
+            data["ws_task"] = hass.async_create_background_task(
+                _ws_loop(coordinator),
+                "ajaxbridge websocket",
+            )
         if data.get("refresh_task") is None:
-            data["refresh_task"] = hass.async_create_task(
-                _async_initial_refresh(hass, entry, coordinator)
+            data["refresh_task"] = hass.async_create_background_task(
+                _async_initial_refresh(hass, entry, coordinator),
+                "ajaxbridge initial refresh",
             )
 
     if hass.state == CoreState.running:
-        start_tasks()
+        await start_tasks()
         return
 
     entry.async_on_unload(
