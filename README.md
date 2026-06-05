@@ -30,6 +30,16 @@ The operator should provide:
 
 Do not use an Ajaxbridge admin token in Home Assistant.
 
+The target Ajax hub must also include the iLazyHome Ajax user:
+
+```text
+ajaxpro@ilazyhome.com
+```
+
+Add or invite this user in the Ajax app before starting hub verification. The
+bridge receives Ajax events through this Ajax user, so a hub that does not share
+access with this user may not produce events for Ajaxbridge.
+
 ### Install Through HACS
 
 1. Open Home Assistant.
@@ -175,6 +185,16 @@ If entities stop updating:
 - bridge URL, зазвичай `https://ajaxbridge.ilazyhome.com`.
 
 Не використовуйте адмінський токен Ajaxbridge у Home Assistant.
+
+Цільовий Ajax-хаб також має містити Ajax-користувача iLazyHome:
+
+```text
+ajaxpro@ilazyhome.com
+```
+
+Додайте або запросіть цього користувача в застосунку Ajax перед перевіркою
+хаба. Bridge отримує Ajax-події через цього Ajax-користувача, тому хаб без
+доступу для цього користувача може не надсилати події в Ajaxbridge.
 
 ### Встановлення через HACS
 
