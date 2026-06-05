@@ -13,6 +13,12 @@
     },
     "abort": {
       "already_configured": "Ця інсталяція ajaxbridge вже налаштована."
+    },
+    "error": {
+      "required": "API token обов'язковий.",
+      "request_failed": "Запит до Ajaxbridge не виконано.",
+      "unauthorized": "Ajaxbridge відхилив token або scope цієї інсталяції.",
+      "installation_mismatch": "Цей token належить іншій інсталяції Ajaxbridge."
     }
   },
   "options": {
@@ -80,6 +86,7 @@
       "max_hubs_exceeded": "Ця інсталяція досягла ліміту увімкнених хабів. Вимкніть інший зв'язок або попросіть оператора збільшити Max hubs.",
       "conflict": "Ajaxbridge відхилив цю зміну, бо поточний стан claim або зв'язку не дозволяє її виконати.",
       "unauthorized": "Ajaxbridge відхилив token або scope цієї інсталяції.",
+      "installation_mismatch": "Цей token належить іншій інсталяції Ajaxbridge.",
       "not_found": "Ajaxbridge не знайшов цей claim або зв'язок для поточної інсталяції."
     }
   }

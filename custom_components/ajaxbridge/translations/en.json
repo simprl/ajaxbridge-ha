@@ -13,6 +13,12 @@
     },
     "abort": {
       "already_configured": "This ajaxbridge installation is already configured."
+    },
+    "error": {
+      "required": "API token is required.",
+      "request_failed": "Ajaxbridge request failed.",
+      "unauthorized": "Ajaxbridge rejected this installation token or scope.",
+      "installation_mismatch": "This token belongs to a different Ajaxbridge installation."
     }
   },
   "options": {
@@ -80,6 +86,7 @@
       "max_hubs_exceeded": "This installation has reached its enabled hub limit. Disable another membership or ask an operator to increase Max hubs.",
       "conflict": "Ajaxbridge rejected this change because the current claim or membership state does not allow it.",
       "unauthorized": "Ajaxbridge rejected this installation token or scope.",
+      "installation_mismatch": "This token belongs to a different Ajaxbridge installation.",
       "not_found": "Ajaxbridge could not find this claim or membership for the current installation."
     }
   }

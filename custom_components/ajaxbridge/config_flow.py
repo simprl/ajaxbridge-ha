@@ -37,15 +37,33 @@ class AjaxbridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             installation_id = user_input[CONF_INSTALLATION_ID].strip().lower()
-            await self.async_set_unique_id(f"{DOMAIN}_{installation_id}")
-            self._abort_if_unique_id_configured()
+            bridge_url = user_input[CONF_BRIDGE_URL].rstrip("/")
+            api_token = user_input[CONF_API_TOKEN].strip()
 
-            data = {
-                CONF_BRIDGE_URL: user_input[CONF_BRIDGE_URL].rstrip("/"),
-                CONF_INSTALLATION_ID: installation_id,
-                CONF_API_TOKEN: user_input[CONF_API_TOKEN],
-            }
-            return self.async_create_entry(title=f"Ajaxbridge {installation_id}", data=data)
+            if not api_token:
+                errors[CONF_API_TOKEN] = "required"
+            else:
+                validation_error = await _validate_connection_settings(
+                    hass=self.hass,
+                    bridge_url=bridge_url,
+                    installation_id=installation_id,
+                    api_token=api_token,
+                )
+                if validation_error:
+                    errors["base"] = validation_error
+                else:
+                    await self.async_set_unique_id(f"{DOMAIN}_{installation_id}")
+                    self._abort_if_unique_id_configured()
+
+                    data = {
+                        CONF_BRIDGE_URL: bridge_url,
+                        CONF_INSTALLATION_ID: installation_id,
+                        CONF_API_TOKEN: api_token,
+                    }
+                    return self.async_create_entry(
+                        title=f"Ajaxbridge {installation_id}",
+                        data=data,
+                    )
 
         return self.async_show_form(
             step_id="user",
@@ -84,19 +102,28 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             else:
                 installation_id = user_input[CONF_INSTALLATION_ID].strip().lower()
                 bridge_url = user_input[CONF_BRIDGE_URL].rstrip("/")
-                data = {
-                    **self.config_entry.data,
-                    CONF_BRIDGE_URL: bridge_url,
-                    CONF_INSTALLATION_ID: installation_id,
-                    CONF_API_TOKEN: api_token,
-                }
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry,
-                    title=f"Ajaxbridge {installation_id}",
-                    data=data,
+                validation_error = await _validate_connection_settings(
+                    hass=self.hass,
+                    bridge_url=bridge_url,
+                    installation_id=installation_id,
+                    api_token=api_token,
                 )
-                await self.hass.config_entries.async_reload(self.config_entry.entry_id)
-                return self.async_create_entry(title="", data={})
+                if validation_error:
+                    errors["base"] = validation_error
+                else:
+                    data = {
+                        **self.config_entry.data,
+                        CONF_BRIDGE_URL: bridge_url,
+                        CONF_INSTALLATION_ID: installation_id,
+                        CONF_API_TOKEN: api_token,
+                    }
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry,
+                        title=f"Ajaxbridge {installation_id}",
+                        data=data,
+                    )
+                    await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+                    return self.async_create_entry(title="", data={})
 
         return self.async_show_form(
             step_id="connection",
@@ -322,6 +349,34 @@ def _flow_error_from_api(err: AjaxbridgeApiError) -> str:
     if err.status == 409:
         return "conflict"
     return "request_failed"
+
+
+async def _validate_connection_settings(
+    *,
+    hass: Any,
+    bridge_url: str,
+    installation_id: str,
+    api_token: str,
+) -> str | None:
+    """Validate that the token authenticates as the requested installation."""
+    client = AjaxbridgeClient(
+        session=async_get_clientsession(hass),
+        bridge_url=bridge_url,
+        installation_id=installation_id,
+        api_token=api_token,
+    )
+    try:
+        response = await client.get_installation()
+    except AjaxbridgeApiError as err:
+        return _flow_error_from_api(err)
+    except (aiohttp.ClientError, RuntimeError):
+        return "request_failed"
+
+    installation = response.get("installation") or {}
+    actual_installation_id = str(installation.get("installation_id") or "").strip().lower()
+    if actual_installation_id != installation_id:
+        return "installation_mismatch"
+    return None
 
 
 def _membership_change_key(membership: dict[str, Any]) -> str:
