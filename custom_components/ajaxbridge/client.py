@@ -74,6 +74,10 @@ class AjaxbridgeClient:
         """List memberships for this installation."""
         return await self._get_json("/api/v1/me/memberships")
 
+    async def get_installation(self) -> dict[str, Any]:
+        """Fetch self-scoped installation capacity."""
+        return await self._get_json("/api/v1/me/installation")
+
     async def enable_membership(self, membership_id: str) -> dict[str, Any]:
         """Enable a membership."""
         return await self._post_json(f"/api/v1/me/memberships/{membership_id}/enable", {})

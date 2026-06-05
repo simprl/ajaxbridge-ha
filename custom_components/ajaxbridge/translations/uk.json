@@ -57,7 +57,7 @@
       },
       "complete_claim": {
         "title": "Додати до інсталяції",
-        "description": "Хаб {hub_id} перевірено. Надішліть цю форму, щоб додати його до цієї інсталяції Home Assistant.",
+        "description": "Хаб {hub_id} перевірено. Місткість: {capacity}. Надішліть цю форму, щоб додати його до цієї інсталяції Home Assistant.",
         "data": {
           "hub_id": "ID хаба",
           "confirm_complete": "Додати цей хаб до цієї інсталяції Home Assistant"
@@ -65,7 +65,7 @@
       },
       "memberships": {
         "title": "Зв'язки хабів",
-        "description": "Увімкнути або вимкнути зв'язок хаба з цією інсталяцією Home Assistant.",
+        "description": "Увімкнути або вимкнути зв'язок хаба з цією інсталяцією Home Assistant. Місткість: {capacity}.",
         "data": {
           "membership_change": "Зміна"
         }

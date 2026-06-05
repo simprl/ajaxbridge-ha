@@ -57,7 +57,7 @@
       },
       "complete_claim": {
         "title": "Add to installation",
-        "description": "Hub {hub_id} is verified. Submit this step to add it to this Home Assistant installation.",
+        "description": "Hub {hub_id} is verified. Capacity: {capacity}. Submit this step to add it to this Home Assistant installation.",
         "data": {
           "hub_id": "Hub ID",
           "confirm_complete": "Add this hub to this Home Assistant installation"
@@ -65,7 +65,7 @@
       },
       "memberships": {
         "title": "Memberships",
-        "description": "Enable or disable a hub membership for this Home Assistant installation.",
+        "description": "Enable or disable a hub membership for this Home Assistant installation. Capacity: {capacity}.",
         "data": {
           "membership_change": "Change"
         }

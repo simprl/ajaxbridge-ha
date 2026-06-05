@@ -224,6 +224,7 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             ),
             description_placeholders={
                 "hub_id": claim["hub_id"],
+                "capacity": await self._capacity_text(),
             },
             errors=errors,
         )
@@ -287,6 +288,9 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
                     vol.Required("membership_change"): vol.In(choices),
                 }
             ),
+            description_placeholders={
+                "capacity": await self._capacity_text(),
+            },
             errors=errors,
         )
 
@@ -297,6 +301,14 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             installation_id=self.config_entry.data[CONF_INSTALLATION_ID],
             api_token=self.config_entry.data[CONF_API_TOKEN],
         )
+
+    async def _capacity_text(self) -> str:
+        try:
+            response = await self._client().get_installation()
+        except (AjaxbridgeApiError, aiohttp.ClientError, RuntimeError):
+            return "capacity unavailable"
+        installation = response.get("installation") or {}
+        return _capacity_text(installation)
 
 
 def _flow_error_from_api(err: AjaxbridgeApiError) -> str:
@@ -327,3 +339,11 @@ def _membership_change_label(membership: dict[str, Any]) -> str:
     if model and model.lower() != "ajax hub":
         details = f"{details}, {model}"
     return f"{action} {name} ({details}) / {state}"
+
+
+def _capacity_text(installation: dict[str, Any]) -> str:
+    available = int(installation.get("available_slots") or 0)
+    max_hubs = int(installation.get("max_hubs") or 0)
+    enabled = int(installation.get("enabled_count") or 0)
+    disabled = int(installation.get("disabled_count") or 0)
+    return f"available={available}/{max_hubs}; enabled={enabled}; disabled={disabled}"
