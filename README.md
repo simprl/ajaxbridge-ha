@@ -40,6 +40,14 @@ ajaxpro@ilazyhome.com
 The bridge receives Ajax events through this Ajax user, so a hub that does not
 share access with this user may not produce events for Ajaxbridge.
 
+To see Ajax hub state in Home Assistant, three things must be true:
+
+1. Home Assistant is connected to Ajaxbridge with the correct installation ID
+   and token.
+2. The target Ajax hub is shared with `ajaxpro@ilazyhome.com` in the Ajax app.
+3. The hub is verified and added to this Home Assistant installation through
+   the Ajaxbridge integration flow.
+
 ### Install Through HACS
 
 1. Open Home Assistant.
@@ -79,18 +87,47 @@ installation and given you a valid installation token.
 1. Open `Settings -> Devices & services -> Ajaxbridge -> Configure`.
 2. Choose `Add hub`.
 3. Enter the Ajax hub ID.
-4. In the Ajax app, add or invite the iLazyHome Ajax user
-   `ajaxpro@ilazyhome.com` to the target hub if it is not already there.
-5. Home Assistant shows a verification code like `AJB-123456`.
-6. Temporarily add that code to your Ajax user name for the target hub.
-7. Perform a real Ajax action on that hub, for example arm or disarm a group.
-8. Return to Home Assistant and choose `Verify hub`.
-9. After verification succeeds, choose `Add to installation`.
-10. Check that the hub appears under Ajaxbridge devices and that its entities
+4. Home Assistant shows a verification code like `AJB-123456`. Keep this page
+   open or copy the code.
+5. Open the Ajax app on your phone or desktop.
+6. Select the space that contains the target hub.
+7. Open the space settings, usually with the gear/settings icon.
+8. Open `Users`.
+9. Click `Send invites`.
+10. Enter:
+
+   ```text
+   ajaxpro@ilazyhome.com
+   ```
+
+11. Click `Continue` to send the invite.
+12. Wait until this user appears in `Active users`, or ask the iLazyHome
+    operator to accept/confirm the invite if it remains in `Pending invites`.
+13. In the Ajax app, open the main menu, then `Account`, then `Edit Account`.
+14. Add the verification code to your own Ajax user name. For example, change
+    `John Smith` to `John Smith AJB-123456`.
+15. Save the account name.
+16. Perform a real Ajax action on the target hub, for example arm or disarm a
+    group.
+17. Return to Home Assistant and choose `Verify hub`.
+18. After verification succeeds, choose `Add to installation`.
+19. Remove the `AJB-123456` code from your Ajax user name.
+20. Check that the hub appears under Ajaxbridge devices and that its entities
    update after a real Ajax arm/disarm event.
 
 The verification code proves that the HA operator can influence the target Ajax
 hub through Ajax itself. Knowing only a hub ID is not enough to attach a hub.
+
+The Ajax user invitation flow follows Ajax Systems' official flow:
+`Open Ajax app -> select space -> space settings -> Users -> Send invites ->
+enter email -> Continue`.
+
+Official Ajax reference:
+`https://support.ajax.systems/en/faqs/how-to-invite-users/`.
+
+If you do not see `Users` or `Send invites` in the Ajax app, your Ajax account
+does not have enough rights to invite users. Ask the Ajax space administrator
+or the iLazyHome operator to invite `ajaxpro@ilazyhome.com` to the target hub.
 
 If the installation has reached its enabled hub limit, Home Assistant will show
 a capacity error. Disable another membership or ask the Ajaxbridge operator to
@@ -197,6 +234,14 @@ ajaxpro@ilazyhome.com
 Bridge отримує Ajax-події через цього Ajax-користувача, тому хаб без доступу
 для цього користувача може не надсилати події в Ajaxbridge.
 
+Щоб стан Ajax-хаба з'явився в Home Assistant, мають виконуватися три умови:
+
+1. Home Assistant підключений до Ajaxbridge з правильним installation ID і
+   token.
+2. Цільовий Ajax-хаб відкритий для `ajaxpro@ilazyhome.com` у застосунку Ajax.
+3. Хаб перевірений і доданий до цієї інсталяції Home Assistant через flow
+   інтеграції Ajaxbridge.
+
 ### Встановлення через HACS
 
 1. Відкрийте Home Assistant.
@@ -236,20 +281,50 @@ Settings -> Devices & services -> Ajaxbridge -> Configure
 1. Відкрийте `Settings -> Devices & services -> Ajaxbridge -> Configure`.
 2. Виберіть `Add hub`.
 3. Введіть ID Ajax-хаба.
-4. У застосунку Ajax додайте або запросіть Ajax-користувача iLazyHome
-   `ajaxpro@ilazyhome.com` на цільовий хаб, якщо його там ще немає.
-5. Home Assistant покаже код перевірки на кшталт `AJB-123456`.
-6. Тимчасово додайте цей код до імені вашого Ajax-користувача на цільовому
-   хабі.
-7. Виконайте реальну дію в Ajax на цьому хабі, наприклад поставте групу під
+4. Home Assistant покаже код перевірки на кшталт `AJB-123456`. Залиште цю
+   сторінку відкритою або скопіюйте код.
+5. Відкрийте застосунок Ajax на телефоні або комп'ютері.
+6. Виберіть space, у якому знаходиться цільовий хаб.
+7. Відкрийте settings цього space, зазвичай через іконку шестерні/settings.
+8. Відкрийте `Users`.
+9. Натисніть `Send invites`.
+10. Введіть:
+
+   ```text
+   ajaxpro@ilazyhome.com
+   ```
+
+11. Натисніть `Continue`, щоб надіслати запрошення.
+12. Дочекайтеся, поки цей користувач з'явиться в `Active users`, або попросіть
+    оператора iLazyHome прийняти/підтвердити запрошення, якщо воно залишилося в
+    `Pending invites`.
+13. У застосунку Ajax відкрийте головне меню, потім `Account`, потім
+    `Edit Account`.
+14. Додайте код перевірки до імені вашого Ajax-користувача. Наприклад, змініть
+    `John Smith` на `John Smith AJB-123456`.
+15. Збережіть ім'я акаунта.
+16. Виконайте реальну дію в Ajax на цільовому хабі, наприклад поставте групу під
    охорону або зніміть її з охорони.
-8. Поверніться в Home Assistant і виберіть `Verify hub`.
-9. Після успішної перевірки виберіть `Add to installation`.
-10. Переконайтеся, що хаб з'явився серед пристроїв Ajaxbridge і що його сутності
+17. Поверніться в Home Assistant і виберіть `Verify hub`.
+18. Після успішної перевірки виберіть `Add to installation`.
+19. Видаліть код `AJB-123456` з імені вашого Ajax-користувача.
+20. Переконайтеся, що хаб з'явився серед пристроїв Ajaxbridge і що його сутності
    оновлюються після реальної Ajax-дії.
 
 Код перевірки підтверджує, що оператор HA може впливати на цільовий Ajax-хаб
 через сам Ajax. Одного знання ID хаба недостатньо, щоб прив'язати хаб.
+
+Flow запрошення користувача відповідає офіційній інструкції Ajax Systems:
+`Open Ajax app -> select space -> space settings -> Users -> Send invites ->
+enter email -> Continue`.
+
+Офіційна інструкція Ajax:
+`https://support.ajax.systems/en/faqs/how-to-invite-users/`.
+
+Якщо ви не бачите `Users` або `Send invites` у застосунку Ajax, ваш Ajax-акаунт
+не має достатніх прав для запрошення користувачів. Попросіть адміністратора
+Ajax space або оператора iLazyHome запросити `ajaxpro@ilazyhome.com` на
+цільовий хаб.
 
 Якщо інсталяція досягла ліміту увімкнених хабів, Home Assistant покаже помилку
 місткості. Вимкніть інше membership або попросіть оператора Ajaxbridge
