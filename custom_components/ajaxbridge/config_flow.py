@@ -320,5 +320,10 @@ def _membership_change_key(membership: dict[str, Any]) -> str:
 def _membership_change_label(membership: dict[str, Any]) -> str:
     action = "Disable" if membership.get("enabled") else "Enable"
     state = "enabled" if membership.get("enabled") else "disabled"
-    name = membership.get("hub_name") or membership["hub_id"]
-    return f"{action} {name} / {state}"
+    hub_id = str(membership["hub_id"])
+    name = str(membership.get("hub_name") or hub_id)
+    model = str(membership.get("hub_model") or "").strip()
+    details = hub_id
+    if model and model.lower() != "ajax hub":
+        details = f"{details}, {model}"
+    return f"{action} {name} ({details}) / {state}"
