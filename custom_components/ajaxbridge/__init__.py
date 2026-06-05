@@ -109,6 +109,10 @@ async def _async_initial_refresh(
 
     _async_cleanup_registry(hass, entry, coordinator)
     _async_align_group_entity_ids(hass, entry, coordinator)
+    hass.async_create_task(
+        _async_delayed_align_group_entity_ids(hass, entry, coordinator),
+        "ajaxbridge align group entity ids",
+    )
 
 
 async def _ws_loop(coordinator: AjaxbridgeCoordinator) -> None:
@@ -183,6 +187,19 @@ def _async_register_services(hass: HomeAssistant) -> None:
         ),
     )
     hass.data[DOMAIN]["_services_registered"] = True
+
+
+async def _async_delayed_align_group_entity_ids(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    coordinator: AjaxbridgeCoordinator,
+) -> None:
+    """Align group helper entity IDs after HA finishes registering new entities."""
+    await asyncio.sleep(2)
+    data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if data is None:
+        return
+    _async_align_group_entity_ids(hass, entry, coordinator)
 
 
 def _exception_reason(err: Exception) -> str:
