@@ -9,7 +9,26 @@ integration is intended for HA operators who receive an installation ID and
 installation token from an Ajaxbridge administrator, but do not have access to
 the Ajaxbridge admin UI.
 
+## Contents
+
+- [English](#english)
+- [Українською](#українською)
+
 ## English
+
+### Get Installation Credentials
+
+Before adding the integration, contact the iLazyHome operator through the
+contacts on `https://ilazyhome.com/` and request Ajaxbridge access for your Home
+Assistant installation.
+
+The operator should provide:
+
+- `Installation ID`;
+- one-time installation `API token`;
+- bridge URL, usually `https://ajaxbridge.ilazyhome.com`.
+
+Do not use an Ajaxbridge admin token in Home Assistant.
 
 ### Install Through HACS
 
@@ -143,6 +162,20 @@ If entities stop updating:
 
 ## Українською
 
+### Отримання даних для підключення
+
+Перед додаванням інтеграції зв'яжіться з оператором iLazyHome через контакти
+на сайті `https://ilazyhome.com/` і попросіть надати доступ Ajaxbridge для вашої
+інсталяції Home Assistant.
+
+Оператор має надати:
+
+- `Installation ID`;
+- одноразовий `API token` інсталяції;
+- bridge URL, зазвичай `https://ajaxbridge.ilazyhome.com`.
+
+Не використовуйте адмінський токен Ajaxbridge у Home Assistant.
+
 ### Встановлення через HACS
 
 1. Відкрийте Home Assistant.
@@ -273,13 +306,3 @@ sensor.ajaxbridge_diagnostics
 4. Перезавантажте інтеграцію Ajaxbridge.
 5. Перезапускайте Home Assistant тільки після оновлення custom integration або
    якщо reload не застосував змінений Python-код.
-
-## Development
-
-The source of truth for development currently lives in the Ajaxbridge monorepo:
-
-```text
-ajaxbridge/integrations/home_assistant/custom_components/ajaxbridge
-```
-
-The public HACS repository is the distribution copy.
