@@ -16,7 +16,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .client import AjaxbridgeClient
 from .const import CONF_API_TOKEN, CONF_BRIDGE_URL, CONF_INSTALLATION_ID, DOMAIN, PLATFORMS
-from .coordinator import AjaxbridgeCoordinator
+from .coordinator import AjaxbridgeCoordinator, AjaxbridgeData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,13 +35,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api_token=entry.data[CONF_API_TOKEN],
     )
     coordinator = AjaxbridgeCoordinator(hass, client)
-    await coordinator.async_config_entry_first_refresh()
-    _async_cleanup_registry(hass, entry, coordinator)
+    coordinator.async_set_updated_data(AjaxbridgeData(installation_id=client.installation_id))
 
     ws_task = hass.async_create_task(_ws_loop(coordinator))
+    refresh_task = hass.async_create_task(_async_initial_refresh(hass, entry, coordinator))
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "coordinator": coordinator,
         "ws_task": ws_task,
+        "refresh_task": refresh_task,
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -52,10 +53,29 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data = hass.data[DOMAIN].get(entry.entry_id)
     if data and data.get("ws_task"):
         data["ws_task"].cancel()
+    if data and data.get("refresh_task"):
+        data["refresh_task"].cancel()
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
+
+
+async def _async_initial_refresh(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    coordinator: AjaxbridgeCoordinator,
+) -> None:
+    """Fetch the first state model without blocking HA startup."""
+    try:
+        await coordinator.async_refresh()
+    except asyncio.CancelledError:
+        raise
+    except Exception as err:
+        _LOGGER.warning("Ajaxbridge initial refresh failed: %s", err)
+        return
+
+    _async_cleanup_registry(hass, entry, coordinator)
 
 
 async def _ws_loop(coordinator: AjaxbridgeCoordinator) -> None:
