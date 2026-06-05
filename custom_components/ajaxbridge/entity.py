@@ -29,21 +29,26 @@ class AjaxbridgeEntity(CoordinatorEntity[AjaxbridgeCoordinator]):
         self._attr_unique_id = description.key
         self._attr_name = description.name
 
-        if description.device_key:
-            device = coordinator.data.devices.get(description.device_key, {})
-            self._attr_device_info = DeviceInfo(
-                identifiers={(DOMAIN, description.device_key)},
-                name=device.get("name", description.device_key),
-                manufacturer=device.get("manufacturer"),
-                model=device.get("model"),
-            )
-
     @property
     def entity_data(self) -> AjaxbridgeEntityDescription:
         """Return the current entity data."""
         return self.coordinator.data.entities.get(
             self.entity_description_data.key,
             self.entity_description_data,
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        """Return the current Home Assistant device for this entity."""
+        device_key = self.entity_data.device_key
+        if not device_key:
+            return None
+        device = self.coordinator.data.devices.get(device_key, {})
+        return DeviceInfo(
+            identifiers={(DOMAIN, device_key)},
+            name=device.get("name", device_key),
+            manufacturer=device.get("manufacturer"),
+            model=device.get("model"),
         )
 
     @property

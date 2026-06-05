@@ -132,8 +132,12 @@ async def _ws_loop(coordinator: AjaxbridgeCoordinator) -> None:
             coordinator.mark_ws_disconnected("cancelled")
             raise
         except Exception as err:
-            coordinator.mark_ws_disconnected(str(err))
-            _LOGGER.warning("Ajaxbridge WebSocket disconnected: %s", err)
+            reason = _exception_reason(err)
+            coordinator.mark_ws_disconnected(reason)
+            if _should_log_ws_warning(err, reason):
+                _LOGGER.warning("Ajaxbridge WebSocket disconnected: %s", reason)
+            else:
+                _LOGGER.debug("Ajaxbridge WebSocket disconnected: %s", reason)
             await asyncio.sleep(5)
 
 
@@ -173,6 +177,18 @@ def _async_register_services(hass: HomeAssistant) -> None:
         ),
     )
     hass.data[DOMAIN]["_services_registered"] = True
+
+
+def _exception_reason(err: Exception) -> str:
+    """Return a compact non-empty exception reason."""
+    return str(err).strip() or err.__class__.__name__
+
+
+def _should_log_ws_warning(err: Exception, reason: str) -> bool:
+    """Return whether a WebSocket reconnect reason deserves warning-level logs."""
+    if isinstance(err, TimeoutError):
+        return False
+    return reason not in {"TimeoutError", "ConnectionResetError"}
 
 
 def _async_cleanup_registry(
