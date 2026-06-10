@@ -16,9 +16,9 @@ from .client import AjaxbridgeClient
 from .const import CONF_API_TOKEN, CONF_BRIDGE_URL, CONF_INSTALLATION_ID, DOMAIN, PLATFORMS
 from .coordinator import AjaxbridgeCoordinator
 from .registry import (
-    async_align_group_entity_ids,
     async_cleanup_registry,
     async_delayed_align_group_entity_ids,
+    async_sync_registry_metadata,
 )
 from .services import async_register_services
 from .state_model import AjaxbridgeData
@@ -48,6 +48,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "refresh_task": None,
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(
+        coordinator.async_add_listener(
+            lambda: async_sync_registry_metadata(hass, entry, coordinator)
+        )
+    )
     await _async_start_background_tasks_after_startup(hass, entry, coordinator)
     return True
 
@@ -114,7 +119,7 @@ async def _async_initial_refresh(
         return
 
     async_cleanup_registry(hass, entry, coordinator)
-    async_align_group_entity_ids(hass, entry, coordinator)
+    async_sync_registry_metadata(hass, entry, coordinator)
     data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
     if data is None:
         return

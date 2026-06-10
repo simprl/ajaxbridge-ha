@@ -27,7 +27,49 @@ async def async_delayed_align_group_entity_ids(
     data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
     if data is None:
         return
+    async_sync_registry_metadata(hass, entry, coordinator)
+
+
+def async_sync_registry_metadata(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    coordinator: AjaxbridgeCoordinator,
+) -> None:
+    """Keep HA registry metadata in sync with the latest state model."""
+    async_update_device_registry(hass, entry, coordinator)
     async_align_group_entity_ids(hass, entry, coordinator)
+
+
+def async_update_device_registry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    coordinator: AjaxbridgeCoordinator,
+) -> None:
+    """Update HA device names/models when Ajax REST metadata changes."""
+    if not coordinator.data:
+        return
+
+    device_registry = dr.async_get(hass)
+    for device_key, device in coordinator.data.devices.items():
+        device_entry = device_registry.async_get_device(identifiers={(DOMAIN, device_key)})
+        if device_entry is None:
+            continue
+        updates: dict[str, str] = {}
+        name = str(device.get("name") or "").strip()
+        manufacturer = str(device.get("manufacturer") or "").strip()
+        model = str(device.get("model") or "").strip()
+        if name and device_entry.name != name:
+            updates["name"] = name
+        if manufacturer and device_entry.manufacturer != manufacturer:
+            updates["manufacturer"] = manufacturer
+        if model and device_entry.model != model:
+            updates["model"] = model
+        if not updates:
+            continue
+        try:
+            device_registry.async_update_device(device_entry.id, **updates)
+        except ValueError as err:
+            _LOGGER.warning("Cannot update Ajaxbridge device %s metadata: %s", device_key, err)
 
 
 def async_cleanup_registry(

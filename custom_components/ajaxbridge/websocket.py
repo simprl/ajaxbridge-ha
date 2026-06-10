@@ -35,6 +35,8 @@ async def ws_loop(coordinator: AjaxbridgeCoordinator) -> None:
                 coordinator.mark_ws_event()
                 if payload.get("stream") == "entity_state":
                     coordinator.apply_entity_state(payload.get("event") or {})
+                elif payload.get("stream") == "availability":
+                    await coordinator.async_request_refresh()
         except asyncio.CancelledError:
             coordinator.mark_ws_disconnected("cancelled")
             raise
