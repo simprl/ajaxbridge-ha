@@ -7,6 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import AjaxbridgeCoordinator
@@ -50,7 +51,7 @@ class AjaxbridgeSensor(AjaxbridgeEntity, SensorEntity):
         return str(unit) if unit else None
 
 
-class AjaxbridgeDiagnosticsSensor(SensorEntity):
+class AjaxbridgeDiagnosticsSensor(CoordinatorEntity[AjaxbridgeCoordinator], SensorEntity):
     """Expose HA-side ajaxbridge diagnostics."""
 
     _attr_has_entity_name = False
@@ -58,7 +59,7 @@ class AjaxbridgeDiagnosticsSensor(SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, coordinator: AjaxbridgeCoordinator) -> None:
-        self.coordinator = coordinator
+        super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}:{coordinator.client.installation_id}:diagnostics"
 
     @property

@@ -11,7 +11,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import AjaxbridgeCoordinator, AjaxbridgeEntityDescription
+from .coordinator import AjaxbridgeCoordinator
+from .state_model import AjaxbridgeEntityDescription, object_id_from_entity_key
 
 
 class AjaxbridgeEntity(CoordinatorEntity[AjaxbridgeCoordinator]):
@@ -28,6 +29,7 @@ class AjaxbridgeEntity(CoordinatorEntity[AjaxbridgeCoordinator]):
         self.entity_description_data = description
         self._attr_unique_id = description.key
         self._attr_name = description.name
+        self._attr_suggested_object_id = object_id_from_entity_key(description.key)
 
     @property
     def entity_data(self) -> AjaxbridgeEntityDescription:

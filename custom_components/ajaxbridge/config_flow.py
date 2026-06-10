@@ -13,6 +13,13 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .client import AjaxbridgeApiError, AjaxbridgeClient
 from .const import CONF_API_TOKEN, CONF_BRIDGE_URL, CONF_INSTALLATION_ID, DOMAIN
+from .flow_helpers import (
+    capacity_text,
+    flow_error_from_api_status,
+    membership_change_key,
+    membership_change_label,
+    normalize_connection_settings,
+)
 
 ACTION_ADD_HUB = "add_hub"
 ACTION_CONNECTION = "connection"
@@ -36,32 +43,30 @@ class AjaxbridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            installation_id = user_input[CONF_INSTALLATION_ID].strip().lower()
-            bridge_url = user_input[CONF_BRIDGE_URL].rstrip("/")
-            api_token = user_input[CONF_API_TOKEN].strip()
+            settings = normalize_connection_settings(user_input)
 
-            if not api_token:
+            if not settings.api_token:
                 errors[CONF_API_TOKEN] = "required"
             else:
                 validation_error = await _validate_connection_settings(
                     hass=self.hass,
-                    bridge_url=bridge_url,
-                    installation_id=installation_id,
-                    api_token=api_token,
+                    bridge_url=settings.bridge_url,
+                    installation_id=settings.installation_id,
+                    api_token=settings.api_token,
                 )
                 if validation_error:
                     errors["base"] = validation_error
                 else:
-                    await self.async_set_unique_id(f"{DOMAIN}_{installation_id}")
+                    await self.async_set_unique_id(f"{DOMAIN}_{settings.installation_id}")
                     self._abort_if_unique_id_configured()
 
                     data = {
-                        CONF_BRIDGE_URL: bridge_url,
-                        CONF_INSTALLATION_ID: installation_id,
-                        CONF_API_TOKEN: api_token,
+                        CONF_BRIDGE_URL: settings.bridge_url,
+                        CONF_INSTALLATION_ID: settings.installation_id,
+                        CONF_API_TOKEN: settings.api_token,
                     }
                     return self.async_create_entry(
-                        title=f"Ajaxbridge {installation_id}",
+                        title=f"Ajaxbridge {settings.installation_id}",
                         data=data,
                     )
 
@@ -96,30 +101,28 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            api_token = user_input[CONF_API_TOKEN].strip()
-            if not api_token:
+            settings = normalize_connection_settings(user_input)
+            if not settings.api_token:
                 errors[CONF_API_TOKEN] = "required"
             else:
-                installation_id = user_input[CONF_INSTALLATION_ID].strip().lower()
-                bridge_url = user_input[CONF_BRIDGE_URL].rstrip("/")
                 validation_error = await _validate_connection_settings(
                     hass=self.hass,
-                    bridge_url=bridge_url,
-                    installation_id=installation_id,
-                    api_token=api_token,
+                    bridge_url=settings.bridge_url,
+                    installation_id=settings.installation_id,
+                    api_token=settings.api_token,
                 )
                 if validation_error:
                     errors["base"] = validation_error
                 else:
                     data = {
                         **self.config_entry.data,
-                        CONF_BRIDGE_URL: bridge_url,
-                        CONF_INSTALLATION_ID: installation_id,
-                        CONF_API_TOKEN: api_token,
+                        CONF_BRIDGE_URL: settings.bridge_url,
+                        CONF_INSTALLATION_ID: settings.installation_id,
+                        CONF_API_TOKEN: settings.api_token,
                     }
                     self.hass.config_entries.async_update_entry(
                         self.config_entry,
-                        title=f"Ajaxbridge {installation_id}",
+                        title=f"Ajaxbridge {settings.installation_id}",
                         data=data,
                     )
                     await self.hass.config_entries.async_reload(self.config_entry.entry_id)
@@ -277,11 +280,11 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
             )
         memberships = response.get("memberships") or []
         membership_by_change = {
-            _membership_change_key(item): item
+            membership_change_key(item): item
             for item in memberships
         }
         choices = {
-            change_key: _membership_change_label(item)
+            change_key: membership_change_label(item)
             for change_key, item in membership_by_change.items()
         }
         if not choices:
@@ -334,20 +337,12 @@ class AjaxbridgeOptionsFlow(config_entries.OptionsFlow):
         except (AjaxbridgeApiError, aiohttp.ClientError, RuntimeError):
             return "capacity unavailable"
         installation = response.get("installation") or {}
-        return _capacity_text(installation)
+        return capacity_text(installation)
 
 
 def _flow_error_from_api(err: AjaxbridgeApiError) -> str:
     """Map ajaxbridge API errors to Home Assistant translation keys."""
-    if err.detail == "max_hubs_exceeded":
-        return "max_hubs_exceeded"
-    if err.status in (401, 403):
-        return "unauthorized"
-    if err.status == 404:
-        return "not_found"
-    if err.status == 409:
-        return "conflict"
-    return "request_failed"
+    return flow_error_from_api_status(err.status, err.detail)
 
 
 async def _validate_connection_settings(
@@ -376,28 +371,3 @@ async def _validate_connection_settings(
     if actual_installation_id != installation_id:
         return "unauthorized"
     return None
-
-
-def _membership_change_key(membership: dict[str, Any]) -> str:
-    action = "disable" if membership.get("enabled") else "enable"
-    return f"{action}:{membership['membership_id']}"
-
-
-def _membership_change_label(membership: dict[str, Any]) -> str:
-    action = "Disable" if membership.get("enabled") else "Enable"
-    state = "enabled" if membership.get("enabled") else "disabled"
-    hub_id = str(membership["hub_id"])
-    name = str(membership.get("hub_name") or hub_id)
-    model = str(membership.get("hub_model") or "").strip()
-    details = hub_id
-    if model and model.lower() != "ajax hub":
-        details = f"{details}, {model}"
-    return f"{action} {name} ({details}) / {state}"
-
-
-def _capacity_text(installation: dict[str, Any]) -> str:
-    available = int(installation.get("available_slots") or 0)
-    max_hubs = int(installation.get("max_hubs") or 0)
-    enabled = int(installation.get("enabled_count") or 0)
-    disabled = int(installation.get("disabled_count") or 0)
-    return f"available={available}/{max_hubs}; enabled={enabled}; disabled={disabled}"

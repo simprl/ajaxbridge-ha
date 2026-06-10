@@ -132,6 +132,11 @@ installation and given you a valid installation token.
 The verification code proves that the HA operator can influence the target Ajax
 hub through Ajax itself. Knowing only a hub ID is not enough to attach a hub.
 
+If an iLazyHome operator confirms the hub manually, the operator may verify the
+claim from the Ajaxbridge admin UI. In that case you do not need to rename your
+Ajax user for this claim; continue with `Add to installation` after the
+operator confirms that the claim is verified.
+
 The Ajax user invitation flow follows Ajax Systems' official flow:
 `Open Ajax app -> select space -> space settings -> Users -> Send invites ->
 enter email -> Continue`.
@@ -172,21 +177,21 @@ represented as entities attached to the hub device, not as separate HA devices.
 
 For each Ajax security group:
 
-- `alarm_control_panel.ajax_<hub>_<group>`: source of truth for group armed
+- `alarm_control_panel.ajax_<hub_id>_<group_id>`: source of truth for group armed
   state.
-- `binary_sensor.ajax_<hub>_<group>_alarm_active`: active alarm indicator,
+- `binary_sensor.ajax_<hub_id>_<group_id>_alarm_active`: active alarm indicator,
   using `device_class=problem`.
-- `sensor.ajax_<hub>_<group>_alarm_source`: latest alarm source and event
+- `sensor.ajax_<hub_id>_<group_id>_alarm_source`: latest alarm source and event
   details.
-- `sensor.ajax_<hub>_<group>_security_state`: readable security state for the
+- `sensor.ajax_<hub_id>_<group_id>_security_state`: readable security state for the
   group.
-- `sensor.ajax_<hub>_<group>_last_event`: latest event observed for the group.
+- `sensor.ajax_<hub_id>_<group_id>_last_event`: latest event observed for the group.
 
 For each Ajax hub:
 
-- `sensor.ajax_<hub>_security_summary`: aggregate state across all known
+- `sensor.ajax_<hub_id>_security_summary`: aggregate state across all known
   groups, such as `all_disarmed`, `partially_armed`, `all_armed`, or `unknown`.
-- `sensor.ajax_<hub>_delivery_lag`: event delivery lag for diagnostics.
+- `sensor.ajax_<hub_id>_delivery_lag_seconds`: event delivery lag for diagnostics.
 
 For the integration:
 
@@ -231,8 +236,8 @@ If entities stop updating:
 If a newly added hub shows only these two entities:
 
 ```text
-sensor.ajax_<hub>_security_summary
-sensor.ajax_<hub>_delivery_lag
+sensor.ajax_<hub_id>_security_summary
+sensor.ajax_<hub_id>_delivery_lag_seconds
 ```
 
 reload the Ajaxbridge integration from `Settings -> Devices & services`.
@@ -372,6 +377,11 @@ Settings -> Devices & services -> Ajaxbridge -> Configure
 Код перевірки підтверджує, що оператор HA може впливати на цільовий Ajax-хаб
 через сам Ajax. Одного знання ID хаба недостатньо, щоб прив'язати хаб.
 
+Якщо оператор iLazyHome підтвердив хаб вручну, він може перевірити claim в
+адмінці Ajaxbridge. У такому разі для цього claim не потрібно перейменовувати
+вашого Ajax-користувача; після підтвердження оператором продовжуйте з
+`Add to installation`.
+
 Flow запрошення користувача відповідає офіційній інструкції Ajax Systems:
 `Open Ajax app -> select space -> space settings -> Users -> Send invites ->
 enter email -> Continue`.
@@ -413,20 +423,20 @@ Ajaxbridge створює один HA device для кожного Ajax-хаба
 
 Для кожної Ajax security group:
 
-- `alarm_control_panel.ajax_<hub>_<group>`: основне джерело стану охорони
+- `alarm_control_panel.ajax_<hub_id>_<group_id>`: основне джерело стану охорони
   групи.
-- `binary_sensor.ajax_<hub>_<group>_alarm_active`: індикатор активної тривоги,
+- `binary_sensor.ajax_<hub_id>_<group_id>_alarm_active`: індикатор активної тривоги,
   з `device_class=problem`.
-- `sensor.ajax_<hub>_<group>_alarm_source`: останнє джерело тривоги і деталі
+- `sensor.ajax_<hub_id>_<group_id>_alarm_source`: останнє джерело тривоги і деталі
   події.
-- `sensor.ajax_<hub>_<group>_security_state`: читабельний стан охорони групи.
-- `sensor.ajax_<hub>_<group>_last_event`: остання подія для групи.
+- `sensor.ajax_<hub_id>_<group_id>_security_state`: читабельний стан охорони групи.
+- `sensor.ajax_<hub_id>_<group_id>_last_event`: остання подія для групи.
 
 Для кожного Ajax-хаба:
 
-- `sensor.ajax_<hub>_security_summary`: агрегований стан усіх відомих груп,
+- `sensor.ajax_<hub_id>_security_summary`: агрегований стан усіх відомих груп,
   наприклад `all_disarmed`, `partially_armed`, `all_armed` або `unknown`.
-- `sensor.ajax_<hub>_delivery_lag`: затримка доставки подій для діагностики.
+- `sensor.ajax_<hub_id>_delivery_lag_seconds`: затримка доставки подій для діагностики.
 
 Для інтеграції:
 
@@ -471,8 +481,8 @@ sensor.ajaxbridge_diagnostics
 Якщо щойно доданий хаб показує тільки дві сутності:
 
 ```text
-sensor.ajax_<hub>_security_summary
-sensor.ajax_<hub>_delivery_lag
+sensor.ajax_<hub_id>_security_summary
+sensor.ajax_<hub_id>_delivery_lag_seconds
 ```
 
 перезавантажте інтеграцію Ajaxbridge у `Settings -> Devices & services`.

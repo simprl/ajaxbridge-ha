@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 import logging
 from typing import Any
@@ -12,32 +11,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .client import AjaxbridgeClient
 from .const import DOMAIN
+from .state_model import AjaxbridgeData, parse_state_model
 
 _LOGGER = logging.getLogger(__name__)
-
-
-@dataclass
-class AjaxbridgeEntityDescription:
-    """Entity definition received from ajaxbridge."""
-
-    key: str
-    platform: str
-    name: str
-    device_key: str | None = None
-    state: Any = None
-    available: bool = True
-    device_class: str | None = None
-    capabilities: dict[str, Any] = field(default_factory=dict)
-    attributes: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class AjaxbridgeData:
-    """Current state model data."""
-
-    installation_id: str
-    devices: dict[str, dict[str, Any]] = field(default_factory=dict)
-    entities: dict[str, AjaxbridgeEntityDescription] = field(default_factory=dict)
 
 
 class AjaxbridgeCoordinator(DataUpdateCoordinator[AjaxbridgeData]):
@@ -72,16 +48,7 @@ class AjaxbridgeCoordinator(DataUpdateCoordinator[AjaxbridgeData]):
         self.rest_refreshes += 1
         self.rest_last_refresh_at = _utc_now_iso()
         self.rest_last_state_seq = state_model.get("state_seq")
-        devices = {device["key"]: device for device in state_model.get("devices", [])}
-        entities = {
-            entity["key"]: AjaxbridgeEntityDescription(**entity)
-            for entity in state_model.get("entities", [])
-        }
-        return AjaxbridgeData(
-            installation_id=state_model["installation_id"],
-            devices=devices,
-            entities=entities,
-        )
+        return parse_state_model(state_model)
 
     def apply_entity_state(self, event: dict[str, Any]) -> None:
         """Apply an entity_state event from the WebSocket stream."""
@@ -108,16 +75,19 @@ class AjaxbridgeCoordinator(DataUpdateCoordinator[AjaxbridgeData]):
         self.ws_connects += 1
         self.ws_last_connected_at = _utc_now_iso()
         self.ws_last_error = None
+        self._async_write_diagnostics_state()
 
     def mark_ws_message(self) -> None:
         """Record WebSocket message."""
         self.ws_messages += 1
         self.ws_last_message_at = _utc_now_iso()
+        self._async_write_diagnostics_state()
 
     def mark_ws_event(self) -> None:
         """Record WebSocket event."""
         self.ws_events += 1
         self.ws_last_event_at = _utc_now_iso()
+        self._async_write_diagnostics_state()
 
     def mark_ws_disconnected(self, error: str | None = None) -> None:
         """Record WebSocket disconnect."""
@@ -125,6 +95,7 @@ class AjaxbridgeCoordinator(DataUpdateCoordinator[AjaxbridgeData]):
         self.ws_disconnects += 1
         if error:
             self.ws_last_error = error
+        self._async_write_diagnostics_state()
 
     def diagnostics(self) -> dict[str, Any]:
         """Return HA-side ajaxbridge diagnostics."""
@@ -146,6 +117,11 @@ class AjaxbridgeCoordinator(DataUpdateCoordinator[AjaxbridgeData]):
             "rest_last_refresh_at": self.rest_last_refresh_at,
             "rest_last_state_seq": self.rest_last_state_seq,
         }
+
+    def _async_write_diagnostics_state(self) -> None:
+        """Notify coordinator listeners after diagnostics-only changes."""
+        if self.data:
+            self.async_set_updated_data(self.data)
 
 
 def _utc_now_iso() -> str:

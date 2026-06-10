@@ -4,30 +4,32 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Coroutine
 from typing import Any
 
-import aiohttp
-import voluptuous as vol
-from homeassistant.components import alarm_control_panel, binary_sensor, sensor
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CoreState, Event, HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
 
 from .client import AjaxbridgeClient
 from .const import CONF_API_TOKEN, CONF_BRIDGE_URL, CONF_INSTALLATION_ID, DOMAIN, PLATFORMS
-from .coordinator import AjaxbridgeCoordinator, AjaxbridgeData
+from .coordinator import AjaxbridgeCoordinator
+from .registry import (
+    async_align_group_entity_ids,
+    async_cleanup_registry,
+    async_delayed_align_group_entity_ids,
+)
+from .services import async_register_services
+from .state_model import AjaxbridgeData
+from .websocket import ws_loop
 
 _LOGGER = logging.getLogger(__name__)
-
-SERVICE_UPDATE_ENTRY = "update_entry"
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up ajaxbridge from a config entry."""
-    _async_register_services(hass)
+    async_register_services(hass)
 
     session = async_get_clientsession(hass)
     client = AjaxbridgeClient(
@@ -41,6 +43,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "coordinator": coordinator,
+        "tasks": set(),
         "ws_task": None,
         "refresh_task": None,
     }
@@ -52,13 +55,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload ajaxbridge."""
     data = hass.data[DOMAIN].get(entry.entry_id)
-    if data and data.get("ws_task"):
-        data["ws_task"].cancel()
-    if data and data.get("refresh_task"):
-        data["refresh_task"].cancel()
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+    if not unload_ok:
+        return False
+    if data:
+        await _async_cancel_entry_tasks(data)
+    hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
 
 
@@ -74,12 +76,16 @@ async def _async_start_background_tasks_after_startup(
         if data is None:
             return
         if data.get("ws_task") is None:
-            data["ws_task"] = hass.async_create_background_task(
-                _ws_loop(coordinator),
+            data["ws_task"] = _async_create_entry_task(
+                hass,
+                data,
+                ws_loop(coordinator),
                 "ajaxbridge websocket",
             )
         if data.get("refresh_task") is None:
-            data["refresh_task"] = hass.async_create_background_task(
+            data["refresh_task"] = _async_create_entry_task(
+                hass,
+                data,
                 _async_initial_refresh(hass, entry, coordinator),
                 "ajaxbridge initial refresh",
             )
@@ -107,197 +113,37 @@ async def _async_initial_refresh(
         _LOGGER.warning("Ajaxbridge initial refresh failed: %s", err)
         return
 
-    _async_cleanup_registry(hass, entry, coordinator)
-    _async_align_group_entity_ids(hass, entry, coordinator)
-    hass.async_create_task(
-        _async_delayed_align_group_entity_ids(hass, entry, coordinator),
+    async_cleanup_registry(hass, entry, coordinator)
+    async_align_group_entity_ids(hass, entry, coordinator)
+    data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if data is None:
+        return
+    _async_create_entry_task(
+        hass,
+        data,
+        async_delayed_align_group_entity_ids(hass, entry, coordinator),
         "ajaxbridge align group entity ids",
     )
 
 
-async def _ws_loop(coordinator: AjaxbridgeCoordinator) -> None:
-    """Maintain the ajaxbridge WebSocket subscription."""
-    while True:
-        try:
-            ws = await coordinator.client.connect_ws()
-            coordinator.mark_ws_connected()
-            await ws.send_json(
-                {
-                    "id": 1,
-                    "type": "subscribe",
-                    "streams": ["entity_state", "source_event", "availability"],
-                }
-            )
-            async for message in ws:
-                coordinator.mark_ws_message()
-                if message.type != aiohttp.WSMsgType.TEXT:
-                    continue
-                payload = message.json()
-                if payload.get("type") != "event":
-                    continue
-                coordinator.mark_ws_event()
-                if payload.get("stream") == "entity_state":
-                    coordinator.apply_entity_state(payload.get("event") or {})
-        except asyncio.CancelledError:
-            coordinator.mark_ws_disconnected("cancelled")
-            raise
-        except Exception as err:
-            reason = _exception_reason(err)
-            coordinator.mark_ws_disconnected(reason)
-            if _should_log_ws_warning(err, reason):
-                _LOGGER.warning("Ajaxbridge WebSocket disconnected: %s", reason)
-            else:
-                _LOGGER.debug("Ajaxbridge WebSocket disconnected: %s", reason)
-            await asyncio.sleep(5)
-
-
-def _async_register_services(hass: HomeAssistant) -> None:
-    """Register ajaxbridge maintenance services."""
-    if hass.data.setdefault(DOMAIN, {}).get("_services_registered"):
-        return
-
-    async def update_entry(call: Any) -> None:
-        entry_id = call.data["entry_id"]
-        entry = hass.config_entries.async_get_entry(entry_id)
-        if entry is None or entry.domain != DOMAIN:
-            raise ValueError(f"Ajaxbridge config entry not found: {entry_id}")
-
-        data = dict(entry.data)
-        if CONF_BRIDGE_URL in call.data:
-            data[CONF_BRIDGE_URL] = call.data[CONF_BRIDGE_URL].rstrip("/")
-        if CONF_INSTALLATION_ID in call.data:
-            data[CONF_INSTALLATION_ID] = call.data[CONF_INSTALLATION_ID].strip().lower()
-        if CONF_API_TOKEN in call.data:
-            data[CONF_API_TOKEN] = call.data[CONF_API_TOKEN]
-
-        hass.config_entries.async_update_entry(entry, data=data)
-        await hass.config_entries.async_reload(entry.entry_id)
-
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_UPDATE_ENTRY,
-        update_entry,
-        schema=vol.Schema(
-            {
-                vol.Required("entry_id"): str,
-                vol.Optional(CONF_BRIDGE_URL): str,
-                vol.Optional(CONF_INSTALLATION_ID): str,
-                vol.Optional(CONF_API_TOKEN): str,
-            }
-        ),
-    )
-    hass.data[DOMAIN]["_services_registered"] = True
-
-
-async def _async_delayed_align_group_entity_ids(
+def _async_create_entry_task(
     hass: HomeAssistant,
-    entry: ConfigEntry,
-    coordinator: AjaxbridgeCoordinator,
-) -> None:
-    """Align group helper entity IDs after HA finishes registering new entities."""
-    await asyncio.sleep(2)
-    data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
-    if data is None:
-        return
-    _async_align_group_entity_ids(hass, entry, coordinator)
+    data: dict[str, Any],
+    coro: Coroutine[Any, Any, Any],
+    name: str,
+) -> asyncio.Task:
+    """Create and track a config-entry scoped background task."""
+    task = hass.async_create_background_task(coro, name)
+    tasks: set[asyncio.Task] = data.setdefault("tasks", set())
+    tasks.add(task)
+    task.add_done_callback(tasks.discard)
+    return task
 
 
-def _exception_reason(err: Exception) -> str:
-    """Return a compact non-empty exception reason."""
-    return str(err).strip() or err.__class__.__name__
-
-
-def _should_log_ws_warning(err: Exception, reason: str) -> bool:
-    """Return whether a WebSocket reconnect reason deserves warning-level logs."""
-    if isinstance(err, TimeoutError):
-        return False
-    return reason not in {"TimeoutError", "ConnectionResetError"}
-
-
-def _async_cleanup_registry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    coordinator: AjaxbridgeCoordinator,
-) -> None:
-    """Remove HA registry entries no longer present in the bridge state model."""
-    if not coordinator.data:
-        return
-
-    current_entity_keys = set(coordinator.data.entities)
-    diagnostics_unique_id = f"{DOMAIN}:{coordinator.client.installation_id}:diagnostics"
-    entity_registry = er.async_get(hass)
-    for registry_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
-        if registry_entry.unique_id == diagnostics_unique_id:
-            continue
-        if registry_entry.unique_id in current_entity_keys:
-            continue
-        entity_registry.async_remove(registry_entry.entity_id)
-
-    current_device_keys = set(coordinator.data.devices)
-    device_registry = dr.async_get(hass)
-    for device_entry in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
-        device_keys = {
-            identifier
-            for domain, identifier in device_entry.identifiers
-            if domain == DOMAIN
-        }
-        if device_keys and device_keys.isdisjoint(current_device_keys):
-            device_registry.async_remove_device(device_entry.id)
-
-
-def _async_align_group_entity_ids(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    coordinator: AjaxbridgeCoordinator,
-) -> None:
-    """Keep group helper sensors next to their group alarm panel object id."""
-    if not coordinator.data:
-        return
-
-    entity_registry = er.async_get(hass)
-    registry_entries = er.async_entries_for_config_entry(entity_registry, entry.entry_id)
-    by_unique_id = {registry_entry.unique_id: registry_entry for registry_entry in registry_entries}
-    suffix_platforms = {
-        "alarm_active": binary_sensor.DOMAIN,
-        "alarm_source": sensor.DOMAIN,
-        "security_state": sensor.DOMAIN,
-        "last_event": sensor.DOMAIN,
-    }
-
-    for registry_entry in registry_entries:
-        unique_id = registry_entry.unique_id
-        if not unique_id.startswith("ajax:group:") or not unique_id.endswith(":alarm"):
-            continue
-        if not registry_entry.entity_id.startswith(f"{alarm_control_panel.DOMAIN}."):
-            continue
-
-        object_id = registry_entry.entity_id.split(".", 1)[1]
-        group_key = unique_id[: -len(":alarm")]
-        for suffix, platform in suffix_platforms.items():
-            target_unique_id = f"{group_key}:{suffix}"
-            target_entry = by_unique_id.get(target_unique_id)
-            if target_entry is None:
-                continue
-            desired_entity_id = f"{platform}.{object_id}_{suffix}"
-            if target_entry.entity_id == desired_entity_id:
-                continue
-            existing_entry = entity_registry.async_get(desired_entity_id)
-            if existing_entry is not None and existing_entry.unique_id != target_unique_id:
-                _LOGGER.warning(
-                    "Cannot rename Ajaxbridge entity %s to %s: target exists",
-                    target_entry.entity_id,
-                    desired_entity_id,
-                )
-                continue
-            try:
-                entity_registry.async_update_entity(
-                    target_entry.entity_id,
-                    new_entity_id=desired_entity_id,
-                )
-            except ValueError as err:
-                _LOGGER.warning(
-                    "Cannot rename Ajaxbridge entity %s to %s: %s",
-                    target_entry.entity_id,
-                    desired_entity_id,
-                    err,
-                )
+async def _async_cancel_entry_tasks(data: dict[str, Any]) -> None:
+    """Cancel and await all config-entry scoped background tasks."""
+    tasks = set(data.get("tasks") or ())
+    for task in tasks:
+        task.cancel()
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)

@@ -7,6 +7,8 @@ from typing import Any
 
 import aiohttp
 
+from .url_helpers import websocket_base_url
+
 REQUEST_TIMEOUT_SECONDS = 15
 WS_HEARTBEAT_SECONDS = 30
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)
@@ -38,14 +40,9 @@ class AjaxbridgeClient:
 
     async def get_state_model(self) -> dict[str, Any]:
         """Fetch the current installation state model."""
-        url = f"{self._bridge_url}/api/v1/installations/{self._installation_id}/state-model"
-        async with self._session.get(
-            url,
-            headers={"Authorization": f"Bearer {self._api_token}"},
-            timeout=REQUEST_TIMEOUT,
-        ) as response:
-            await _raise_for_api_error(response)
-            return await response.json()
+        return await self._get_json(
+            f"/api/v1/installations/{self._installation_id}/state-model"
+        )
 
     async def create_claim(
         self,
@@ -97,11 +94,16 @@ class AjaxbridgeClient:
         """Return installation id."""
         return self._installation_id
 
+    @property
+    def _auth_headers(self) -> dict[str, str]:
+        """Return ajaxbridge bearer auth headers."""
+        return {"Authorization": f"Bearer {self._api_token}"}
+
     async def _get_json(self, path: str) -> dict[str, Any]:
         url = f"{self._bridge_url}{path}"
         async with self._session.get(
             url,
-            headers={"Authorization": f"Bearer {self._api_token}"},
+            headers=self._auth_headers,
             timeout=REQUEST_TIMEOUT,
         ) as response:
             await _raise_for_api_error(response)
@@ -111,7 +113,7 @@ class AjaxbridgeClient:
         url = f"{self._bridge_url}{path}"
         async with self._session.post(
             url,
-            headers={"Authorization": f"Bearer {self._api_token}"},
+            headers=self._auth_headers,
             json=payload,
             timeout=REQUEST_TIMEOUT,
         ) as response:
@@ -120,7 +122,7 @@ class AjaxbridgeClient:
 
     async def connect_ws(self) -> aiohttp.ClientWebSocketResponse:
         """Open an authenticated WebSocket connection."""
-        ws_url = self._bridge_url.replace("https://", "wss://").replace("http://", "ws://")
+        ws_url = websocket_base_url(self._bridge_url)
         ws = await self._session.ws_connect(
             f"{ws_url}/api/v1/ws",
             timeout=REQUEST_TIMEOUT_SECONDS,
